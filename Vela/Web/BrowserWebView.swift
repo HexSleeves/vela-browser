@@ -47,9 +47,8 @@ struct BrowserWebView: NSViewRepresentable {
         func observe(_ webView: WKWebView) {
             guard progressObservation == nil else { return }
 
-            progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { [weak self] webView, _ in
-                guard let self else { return }
-                let progress = webView.estimatedProgress
+            progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { [weak self] webView, change in
+                guard let self, let progress = change.newValue else { return }
                 Task { @MainActor in
                     self.store?.updateTab(self.tabID, title: nil, url: nil, isLoading: webView.isLoading, estimatedProgress: progress)
                 }

@@ -24,6 +24,18 @@ final class WebViewPool: WebViewPooling {
     private var webViews: [BrowserTab.ID: WKWebView] = [:]
     weak var store: BrowserStore?
 
+    init() {
+        // Clear stale website data once to ensure UA change takes effect
+        let key = "uaClearedV2"
+        if !UserDefaults.standard.bool(forKey: key) {
+            WKWebsiteDataStore.default().removeData(
+                ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
+                modifiedSince: .distantPast
+            ) {}
+            UserDefaults.standard.set(true, forKey: key)
+        }
+    }
+
     func webView(for tabID: BrowserTab.ID) -> WKWebView {
         if let existing = webViews[tabID] {
             return existing
@@ -33,6 +45,7 @@ final class WebViewPool: WebViewPooling {
         configuration.websiteDataStore = .default()
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
+        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
         webViews[tabID] = webView
         return webView
     }
