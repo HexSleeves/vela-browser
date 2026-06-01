@@ -3,6 +3,7 @@ import SwiftUI
 struct SidebarView: View {
     @Environment(BrowserStore.self) private var store
     @State private var slideDirection: Edge = .trailing
+    @State private var tabFilter = ""
 
     var body: some View {
         ZStack {
@@ -132,7 +133,22 @@ struct SidebarView: View {
     private var tabSections: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                TabSectionView(title: "Pinned", tabs: activeTabs.filter(\.isPinned), isPinned: true)
+                // Tab search/filter
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                    TextField("Filter tabs…", text: $tabFilter)
+                        .textFieldStyle(.plain)
+                        .font(.caption)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 5)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+
+                let filteredTabs = filterTabs(activeTabs)
+
+                TabSectionView(title: "Pinned", tabs: filteredTabs.filter(\.isPinned), isPinned: true)
 
                 // Tab groups
                 ForEach(store.tabGroups) { group in
@@ -141,9 +157,9 @@ struct SidebarView: View {
 
                 // Ungrouped tabs
                 let ungroupedIDs = store.tabGroups.isEmpty
-                    ? activeTabs.filter { !$0.isPinned }.map(\.id)
+                    ? filteredTabs.filter { !$0.isPinned }.map(\.id)
                     : store.ungroupedTabIDs(in: store.activeWorkspace ?? store.workspaces[0])
-                let ungroupedTabs = ungroupedIDs.compactMap { store.tabs[$0] }
+                let ungroupedTabs = filterTabs(ungroupedIDs.compactMap { store.tabs[$0] })
                 if !ungroupedTabs.isEmpty {
                     TabSectionView(title: store.tabGroups.isEmpty ? "Tabs" : "Ungrouped", tabs: ungroupedTabs, isPinned: false)
                 }
@@ -317,6 +333,15 @@ struct SidebarView: View {
 
     private var activeTabs: [BrowserTab] {
         (store.activeWorkspace?.tabIDs ?? []).compactMap { store.tabs[$0] }
+    }
+
+    private func filterTabs(_ tabs: [BrowserTab]) -> [BrowserTab] {
+        guard !tabFilter.isEmpty else { return tabs }
+        let lowered = tabFilter.lowercased()
+        return tabs.filter {
+            $0.title.lowercased().contains(lowered) ||
+            ($0.url?.absoluteString.lowercased().contains(lowered) ?? false)
+        }
     }
 
     private var bottomBar: some View {
