@@ -27,6 +27,7 @@
 		A829E218528B9CFBEAD9D7E2 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D87DCF0AE5280C03F13F3DCF /* WebKit.framework */; };
 		AE28F97327CDE92D5C033C71 /* BrowserWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07753ABE509F168ED8DA863B /* BrowserWebView.swift */; };
 		BF66B39B7D298E37F43A3374 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB8A76F3713ED892A1217B9 /* SidebarView.swift */; };
+		C017F6CF1170B01098FBDA66 /* VelaAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00FD2E3AFD52A87765F716E3 /* VelaAnimation.swift */; };
 		E46D3BE87472E68171DA233C /* BrowserStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A5E772491295CED935B8CC /* BrowserStore.swift */; };
 		E96A9742279D23CCA59ACDA0 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 493FB4BF39945A547F158C46 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
@@ -43,6 +44,7 @@
 
 /* Begin PBXFileReference section */
 		001766702EF9A56ED918A53E /* TabRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabRowView.swift; sourceTree = "<group>"; };
+		00FD2E3AFD52A87765F716E3 /* VelaAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VelaAnimation.swift; sourceTree = "<group>"; };
 		0456909CA1DD7DBEDB54248F /* TabSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSectionView.swift; sourceTree = "<group>"; };
 		06CA3FA9584D12FCFEF9658D /* BrowserPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserPersistenceTests.swift; sourceTree = "<group>"; };
 		07753ABE509F168ED8DA863B /* BrowserWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserWebView.swift; sourceTree = "<group>"; };
@@ -116,6 +118,14 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		665C5EBF0E50432A58D9794C /* Animation */ = {
+			isa = PBXGroup;
+			children = (
+				00FD2E3AFD52A87765F716E3 /* VelaAnimation.swift */,
+			);
+			path = Animation;
+			sourceTree = "<group>";
+		};
 		6CF3A9E0CB5431DE523880F7 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -133,6 +143,7 @@
 		76FBB74658D664F4F3F40A89 /* Vela */ = {
 			isa = PBXGroup;
 			children = (
+				665C5EBF0E50432A58D9794C /* Animation */,
 				DD8CAB57B512C6311633A8CD /* App */,
 				A1699D7897A6FA60B5DC4E26 /* Models */,
 				1C4AE35A05193BF5FE4A7EF4 /* Services */,
@@ -280,6 +291,7 @@
 				BF66B39B7D298E37F43A3374 /* SidebarView.swift in Sources */,
 				42383D6536D6395E97A466F7 /* TabRowView.swift in Sources */,
 				556023E66D92D94734345009 /* TabSectionView.swift in Sources */,
+				C017F6CF1170B01098FBDA66 /* VelaAnimation.swift in Sources */,
 				72CB8F92DDA7BD6155071AD1 /* VelaApp.swift in Sources */,
 				9B8F8AAF3EC9BAC672CE28B2 /* WebViewPool.swift in Sources */,
 				6A2DC37BC3CA8FD4F8F70281 /* Workspace.swift in Sources */,

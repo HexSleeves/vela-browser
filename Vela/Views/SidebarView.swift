@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SidebarView: View {
     @Environment(BrowserStore.self) private var store
+    @State private var slideDirection: Edge = .trailing
 
     var body: some View {
         ZStack {
@@ -12,12 +13,14 @@ struct SidebarView: View {
 
                 if !store.isSidebarCollapsed {
                     tabSections
+                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
                 }
 
                 Spacer(minLength: 12)
                 bottomBar
             }
             .padding(12)
+            .animation(VelaAnimation.layout, value: store.isSidebarCollapsed)
         }
     }
 
@@ -33,6 +36,7 @@ struct SidebarView: View {
         )
         .overlay(.regularMaterial.opacity(0.54))
         .ignoresSafeArea()
+        .animation(VelaAnimation.layout, value: store.activeWorkspaceID)
     }
 
     private var spaceHeader: some View {
@@ -41,11 +45,16 @@ struct SidebarView: View {
                 Text("Vela")
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.primary)
+                    .transition(.opacity)
             }
 
             ForEach(Array(store.workspaces.enumerated()), id: \.element.id) { index, workspace in
                 Button {
-                    store.switchWorkspace(workspace.id)
+                    let currentIndex = store.workspaces.firstIndex(where: { $0.id == store.activeWorkspaceID }) ?? 0
+                    slideDirection = index > currentIndex ? .trailing : .leading
+                    VelaAnimation.withLayout {
+                        store.switchWorkspace(workspace.id)
+                    }
                 } label: {
                     HStack(spacing: 8) {
                         Text("\(index + 1)")
@@ -56,6 +65,7 @@ struct SidebarView: View {
                         if !store.isSidebarCollapsed {
                             Text(workspace.name)
                                 .lineLimit(1)
+                                .transition(.opacity)
                             Spacer()
                         }
                     }
@@ -71,11 +81,16 @@ struct SidebarView: View {
     private var tabSections: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                TabSectionView(title: "Pinned", tabs: activeTabs.filter(\.isPinned))
-                TabSectionView(title: "Tabs", tabs: activeTabs.filter { !$0.isPinned })
+                TabSectionView(title: "Pinned", tabs: activeTabs.filter(\.isPinned), isPinned: true)
+                TabSectionView(title: "Tabs", tabs: activeTabs.filter { !$0.isPinned }, isPinned: false)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .id(store.activeWorkspaceID)
+        .transition(.asymmetric(
+            insertion: .move(edge: slideDirection).combined(with: .opacity),
+            removal: .move(edge: slideDirection == .trailing ? .leading : .trailing).combined(with: .opacity)
+        ))
     }
 
     private var activeTabs: [BrowserTab] {
@@ -85,7 +100,9 @@ struct SidebarView: View {
     private var bottomBar: some View {
         HStack {
             Button {
-                store.createTab()
+                VelaAnimation.withEmphasis {
+                    store.createTab()
+                }
             } label: {
                 Image(systemName: "plus")
                     .frame(width: 24, height: 24)
@@ -93,7 +110,9 @@ struct SidebarView: View {
             .help("New Tab")
 
             Button {
-                store.isSidebarCollapsed.toggle()
+                VelaAnimation.withLayout {
+                    store.isSidebarCollapsed.toggle()
+                }
             } label: {
                 Image(systemName: "sidebar.left")
                     .frame(width: 24, height: 24)

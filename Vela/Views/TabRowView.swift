@@ -2,11 +2,23 @@ import SwiftUI
 
 struct TabRowView: View {
     let tab: BrowserTab
+    var isDragging: Bool = false
+    var selectionNamespace: Namespace.ID
+
     @Environment(BrowserStore.self) private var store
+    @State private var isHovered = false
+
+    private var isSelected: Bool {
+        tab.id == store.activeTabID
+    }
 
     var body: some View {
         Button {
-            store.selectTab(tab.id)
+            if !isDragging {
+                VelaAnimation.withEmphasis {
+                    store.selectTab(tab.id)
+                }
+            }
         } label: {
             HStack(spacing: 8) {
                 Image(systemName: tab.isPinned ? "pin.fill" : "globe")
@@ -24,27 +36,54 @@ struct TabRowView: View {
                 }
 
                 Button {
-                    store.closeTab(tab.id)
+                    VelaAnimation.withEmphasis {
+                        store.closeTab(tab.id)
+                    }
                 } label: {
                     Image(systemName: "xmark")
                         .font(.caption)
                 }
                 .buttonStyle(.plain)
-                .opacity(tab.id == store.activeTabID ? 1 : 0.55)
+                .opacity(closeButtonOpacity)
+                .animation(VelaAnimation.micro, value: isHovered)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 7)
-            .background(tab.id == store.activeTabID ? Color.primary.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+            .background {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.08))
+                        .matchedGeometryEffect(id: "selection", in: selectionNamespace)
+                } else if isHovered && !isDragging {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.primary.opacity(0.04))
+                }
+            }
+            .animation(VelaAnimation.micro, value: isHovered)
         }
         .buttonStyle(.plain)
+        .onHover { hovering in
+            guard !isDragging else { return }
+            isHovered = hovering
+        }
+        .animation(VelaAnimation.emphasis, value: store.activeTabID)
         .contextMenu {
             Button(tab.isPinned ? "Unpin Tab" : "Pin Tab") {
                 store.setPinned(tab.id, isPinned: !tab.isPinned)
             }
 
             Button("Close Tab") {
-                store.closeTab(tab.id)
+                VelaAnimation.withEmphasis {
+                    store.closeTab(tab.id)
+                }
             }
         }
+    }
+
+    /// Close button visibility: always visible when selected, fades in on hover, hidden otherwise.
+    private var closeButtonOpacity: Double {
+        if isSelected { return 1.0 }
+        if isHovered && !isDragging { return 0.8 }
+        return 0.0
     }
 }

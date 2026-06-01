@@ -55,6 +55,61 @@ struct BrowserStoreTests {
         #expect(tabID.flatMap { store.tabs[$0]?.url?.absoluteString } == "https://example.com")
     }
 
+    @Test("moveTab reorders unpinned tabs within the active workspace")
+    func moveTabReordersUnpinnedTabs() throws {
+        let store = makeStore()
+        store.createTab(url: try #require(URL(string: "https://a.com")))
+        store.createTab(url: try #require(URL(string: "https://b.com")))
+        store.createTab(url: try #require(URL(string: "https://c.com")))
+
+        let originalIDs = try #require(store.activeWorkspace?.tabIDs)
+        #expect(originalIDs.count == 3)
+
+        // Move first tab to last position (index 0 -> 2)
+        store.moveTab(from: 0, to: 2, pinned: false)
+
+        let reorderedIDs = try #require(store.activeWorkspace?.tabIDs)
+        #expect(reorderedIDs.count == 3)
+        // Original [A, B, C] -> [B, C, A]
+        #expect(reorderedIDs[0] == originalIDs[1])
+        #expect(reorderedIDs[1] == originalIDs[2])
+        #expect(reorderedIDs[2] == originalIDs[0])
+    }
+
+    @Test("moveTab does not cross pinned/unpinned boundary")
+    func moveTabRespectsSection() throws {
+        let store = makeStore()
+        store.createTab(url: try #require(URL(string: "https://pinned.com")), pinned: true)
+        store.createTab(url: try #require(URL(string: "https://a.com")))
+        store.createTab(url: try #require(URL(string: "https://b.com")))
+
+        let originalIDs = try #require(store.activeWorkspace?.tabIDs)
+        #expect(originalIDs.count == 3)
+
+        // Move unpinned tab at section index 0 to section index 1
+        store.moveTab(from: 0, to: 1, pinned: false)
+
+        let reorderedIDs = try #require(store.activeWorkspace?.tabIDs)
+        // Pinned tab stays at index 0, unpinned tabs swap
+        #expect(reorderedIDs[0] == originalIDs[0]) // pinned tab untouched
+        #expect(reorderedIDs[1] == originalIDs[2])
+        #expect(reorderedIDs[2] == originalIDs[1])
+    }
+
+    @Test("moveTab with same from and to index is a no-op")
+    func moveTabSameIndexNoOp() throws {
+        let store = makeStore()
+        store.createTab(url: try #require(URL(string: "https://a.com")))
+        store.createTab(url: try #require(URL(string: "https://b.com")))
+
+        let originalIDs = try #require(store.activeWorkspace?.tabIDs)
+
+        store.moveTab(from: 0, to: 0, pinned: false)
+
+        let afterIDs = try #require(store.activeWorkspace?.tabIDs)
+        #expect(afterIDs == originalIDs)
+    }
+
     private func makeStore() -> BrowserStore {
         let theme = BrowserTheme.builtIns[0]
         let workspace = Workspace(name: "Personal", themeID: theme.id)

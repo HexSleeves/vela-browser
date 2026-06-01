@@ -9,6 +9,7 @@ struct MainBrowserWindow: View {
         HStack(spacing: 0) {
             SidebarView()
                 .frame(width: store.isSidebarCollapsed ? 64 : 280)
+                .animation(VelaAnimation.layout, value: store.isSidebarCollapsed)
 
             Divider()
 
@@ -24,14 +25,18 @@ struct MainBrowserWindow: View {
     private func handle(_ command: BrowserCommand) {
         switch command {
         case .newTab:
-            store.createTab()
+            VelaAnimation.withEmphasis {
+                store.createTab()
+            }
             addressText = ""
             isAddressFocused = true
         case .focusAddressBar:
             addressText = store.activeTab?.url?.absoluteString ?? ""
             isAddressFocused = true
         case .toggleSidebar:
-            store.isSidebarCollapsed.toggle()
+            VelaAnimation.withLayout {
+                store.isSidebarCollapsed.toggle()
+            }
         }
     }
 }

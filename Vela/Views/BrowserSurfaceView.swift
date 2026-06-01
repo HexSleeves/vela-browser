@@ -7,7 +7,13 @@ struct BrowserSurfaceView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            AddressBar(text: $addressText) {
+            AddressBar(
+                text: $addressText,
+                isFocused: isAddressFocused.wrappedValue,
+                isLoading: store.activeTab?.isLoading ?? false,
+                estimatedProgress: store.activeTab?.estimatedProgress ?? 0,
+                accentColor: store.activeTheme.accent.color
+            ) {
                 store.loadAddressInput(addressText)
             }
             .focused(isAddressFocused)

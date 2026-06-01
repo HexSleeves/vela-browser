@@ -145,6 +145,53 @@ final class BrowserStore {
         persist()
     }
 
+    /// Moves a tab within the active workspace's tab list.
+    /// `fromIndex` and `toIndex` are relative to the filtered section (pinned or unpinned).
+    func moveTab(from fromIndex: Int, to toIndex: Int, pinned: Bool) {
+        guard let wsIndex = workspaces.firstIndex(where: { $0.id == activeWorkspaceID }) else { return }
+
+        let allIDs = workspaces[wsIndex].tabIDs
+        // Collect indices within tabIDs that belong to this section
+        let sectionIndices = allIDs.enumerated().compactMap { offset, id -> Int? in
+            guard let tab = tabs[id], tab.isPinned == pinned else { return nil }
+            return offset
+        }
+
+        guard fromIndex >= 0, fromIndex < sectionIndices.count,
+              toIndex >= 0, toIndex < sectionIndices.count,
+              fromIndex != toIndex else { return }
+
+        let movingAbsoluteIndex = sectionIndices[fromIndex]
+        let tabID = allIDs[movingAbsoluteIndex]
+
+        // Remove from current position
+        workspaces[wsIndex].tabIDs.remove(at: movingAbsoluteIndex)
+
+        // Recalculate section indices after removal
+        let updatedIDs = workspaces[wsIndex].tabIDs
+        let updatedSectionIndices = updatedIDs.enumerated().compactMap { offset, id -> Int? in
+            guard let tab = tabs[id], tab.isPinned == pinned else { return nil }
+            return offset
+        }
+
+        // Compute insertion position
+        let insertAt: Int
+        if toIndex >= updatedSectionIndices.count {
+            // Inserting at the end of the section
+            if let lastIdx = updatedSectionIndices.last {
+                insertAt = lastIdx + 1
+            } else {
+                // Section is now empty — insert at end (for pinned) or after last pinned (for unpinned)
+                insertAt = workspaces[wsIndex].tabIDs.count
+            }
+        } else {
+            insertAt = updatedSectionIndices[toIndex]
+        }
+
+        workspaces[wsIndex].tabIDs.insert(tabID, at: insertAt)
+        persist()
+    }
+
     func loadAddressInput(_ input: String) {
         let destination = navigationService.destination(for: input)
 
@@ -160,7 +207,7 @@ final class BrowserStore {
         persist()
     }
 
-    func updateTab(_ tabID: BrowserTab.ID, title: String?, url: URL?, isLoading: Bool) {
+    func updateTab(_ tabID: BrowserTab.ID, title: String?, url: URL?, isLoading: Bool, estimatedProgress: Double? = nil) {
         guard var tab = tabs[tabID] else {
             return
         }
@@ -170,6 +217,9 @@ final class BrowserStore {
         }
         tab.url = url ?? tab.url
         tab.isLoading = isLoading
+        if let estimatedProgress {
+            tab.estimatedProgress = estimatedProgress
+        }
         tabs[tabID] = tab
         persist()
     }
