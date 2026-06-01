@@ -2,16 +2,49 @@ import SwiftUI
 
 struct MainBrowserWindow: View {
     @Environment(BrowserStore.self) private var store
+    @Environment(\.openWindow) private var openWindow
     @FocusState private var isAddressFocused: Bool
     @State private var addressText = ""
+    @State private var sidebarWidth: CGFloat = 280
+    @State private var isDraggingSidebar = false
+    @State private var dragStartWidth: CGFloat = 280
 
     var body: some View {
         HStack(spacing: 0) {
             SidebarView()
-                .frame(width: store.isSidebarCollapsed ? 64 : 280)
+                .frame(width: store.isSidebarCollapsed ? 64 : sidebarWidth)
                 .animation(VelaAnimation.layout, value: store.isSidebarCollapsed)
 
-            Divider()
+            // Drag handle for sidebar resize
+            if !store.isSidebarCollapsed {
+                Rectangle()
+                    .fill(isDraggingSidebar ? Color.accentColor.opacity(0.5) : Color.clear)
+                    .frame(width: 4)
+                    .contentShape(Rectangle().inset(by: -2))
+                    .onHover { hovering in
+                        if hovering {
+                            NSCursor.resizeLeftRight.push()
+                        } else {
+                            NSCursor.pop()
+                        }
+                    }
+                    .gesture(
+                        DragGesture(minimumDistance: 1)
+                            .onChanged { value in
+                                if !isDraggingSidebar {
+                                    isDraggingSidebar = true
+                                    dragStartWidth = sidebarWidth
+                                }
+                                let newWidth = dragStartWidth + value.translation.width
+                                sidebarWidth = min(max(newWidth, 200), 400)
+                            }
+                            .onEnded { _ in
+                                isDraggingSidebar = false
+                            }
+                    )
+            } else {
+                Divider()
+            }
 
             BrowserSurfaceView(addressText: $addressText, isAddressFocused: $isAddressFocused)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -130,6 +163,9 @@ struct MainBrowserWindow: View {
                     store.splitTabID = tab.id
                 }
             }
+
+        case .openLittleVela:
+            openWindow(id: "little-vela")
         }
     }
 }

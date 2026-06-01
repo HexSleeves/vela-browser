@@ -15,6 +15,16 @@ struct VelaApp: App {
             BrowserCommands()
         }
 
+        // Little Vela: compact popup window for quick browsing
+        WindowGroup("Little Vela", id: "little-vela") {
+            LittleVelaView()
+                .environment(store)
+                .frame(minWidth: 400, minHeight: 300)
+        }
+        .defaultSize(width: 500, height: 600)
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+
         Settings {
             SettingsView()
                 .environment(store)

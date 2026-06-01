@@ -36,8 +36,14 @@ final class WebViewPool: WebViewPooling {
         }
     }
 
+    private let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+
     func webView(for tabID: BrowserTab.ID) -> WKWebView {
         if let existing = webViews[tabID] {
+            // Always re-apply UA in case this webView was created before the fix
+            if existing.customUserAgent != userAgent {
+                existing.customUserAgent = userAgent
+            }
             return existing
         }
 
@@ -45,7 +51,7 @@ final class WebViewPool: WebViewPooling {
         configuration.websiteDataStore = .default()
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
-        webView.customUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        webView.customUserAgent = userAgent
         webViews[tabID] = webView
         return webView
     }
