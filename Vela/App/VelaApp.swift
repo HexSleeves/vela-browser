@@ -25,6 +25,14 @@ struct VelaApp: App {
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
 
+        // Private browsing window
+        WindowGroup("Private Browsing", id: "private-window") {
+            PrivateWindowView()
+                .environment(store)
+                .frame(minWidth: 600, minHeight: 400)
+        }
+        .defaultSize(width: 900, height: 700)
+
         Settings {
             SettingsView()
                 .environment(store)

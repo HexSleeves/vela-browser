@@ -166,6 +166,9 @@ struct MainBrowserWindow: View {
 
         case .openLittleVela:
             openWindow(id: "little-vela")
+
+        case .openPrivateWindow:
+            openWindow(id: "private-window")
         }
     }
 }

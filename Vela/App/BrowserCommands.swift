@@ -123,6 +123,11 @@ struct BrowserCommands: Commands {
                 commandSink?(.openLittleVela)
             }
             .keyboardShortcut("n", modifiers: [.command, .option])
+
+            Button("New Private Window") {
+                commandSink?(.openPrivateWindow)
+            }
+            .keyboardShortcut("n", modifiers: [.command, .shift])
         }
 
         // MARK: - Tab Selection (⌘1-9)
@@ -159,6 +164,7 @@ enum BrowserCommand {
     case showHistory
     case toggleSplit
     case openLittleVela
+    case openPrivateWindow
 }
 
 private struct BrowserCommandSinkKey: FocusedValueKey {
