@@ -29,6 +29,7 @@
 		A1726948641EFF29B8CEA8BF /* CommandBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23F5AEC7382F4750D350736B /* CommandBarView.swift */; };
 		A829E218528B9CFBEAD9D7E2 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D87DCF0AE5280C03F13F3DCF /* WebKit.framework */; };
 		A9F5A797941D7D2EF827B7DF /* FindBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69002946774198BCA3F17FB3 /* FindBarView.swift */; };
+		AC14B7E7C913D2230FC5DB60 /* Bookmark.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3B04F85CFE5C9F5609E1AE2 /* Bookmark.swift */; };
 		AE28F97327CDE92D5C033C71 /* BrowserWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07753ABE509F168ED8DA863B /* BrowserWebView.swift */; };
 		BF66B39B7D298E37F43A3374 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB8A76F3713ED892A1217B9 /* SidebarView.swift */; };
 		C017F6CF1170B01098FBDA66 /* VelaAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00FD2E3AFD52A87765F716E3 /* VelaAnimation.swift */; };
@@ -74,6 +75,7 @@
 		AA566F1AB1994A2BD4B8FB0F /* BrowserTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTab.swift; sourceTree = "<group>"; };
 		AAEC7C117FD753661EC94DCF /* HistoryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryEntry.swift; sourceTree = "<group>"; };
 		C1078DFACB04854902CB04AA /* VelaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VelaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C3B04F85CFE5C9F5609E1AE2 /* Bookmark.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bookmark.swift; sourceTree = "<group>"; };
 		CD2DFDF9D130C9559DA9B52B /* BrowserStateSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserStateSnapshot.swift; sourceTree = "<group>"; };
 		CDE4E5F4809104C86E7310A6 /* NewTabPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewTabPageView.swift; sourceTree = "<group>"; };
 		D87DCF0AE5280C03F13F3DCF /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
@@ -186,6 +188,7 @@
 		A1699D7897A6FA60B5DC4E26 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				C3B04F85CFE5C9F5609E1AE2 /* Bookmark.swift */,
 				CD2DFDF9D130C9559DA9B52B /* BrowserStateSnapshot.swift */,
 				AA566F1AB1994A2BD4B8FB0F /* BrowserTab.swift */,
 				32C250110074B6A3AC09884E /* BrowserTheme.swift */,
@@ -298,6 +301,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				315C6F88E08A59A74D0C75F5 /* AddressBar.swift in Sources */,
+				AC14B7E7C913D2230FC5DB60 /* Bookmark.swift in Sources */,
 				83B4273D328EF85D437C1AC6 /* BrowserCommands.swift in Sources */,
 				419EED1103F415AE7083C7B2 /* BrowserPersistence.swift in Sources */,
 				71FC8570638D171795119567 /* BrowserStateSnapshot.swift in Sources */,

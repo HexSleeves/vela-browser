@@ -94,8 +94,9 @@ struct CommandBarView: View {
 
     private var results: [CommandBarResult] {
         let tabResults = filteredTabs.map { CommandBarResult.tab($0) }
+        let bookmarkResults = filteredBookmarks.map { CommandBarResult.bookmark($0) }
         let historyResults = filteredHistory.map { CommandBarResult.history($0) }
-        return (tabResults + historyResults).prefix(10).map { $0 }
+        return (tabResults + bookmarkResults + historyResults).prefix(10).map { $0 }
     }
 
     private var filteredTabs: [BrowserTab] {
@@ -109,6 +110,19 @@ struct CommandBarView: View {
             .filter { $0.title.lowercased().contains(lowered) || ($0.url?.absoluteString.lowercased().contains(lowered) ?? false) }
             .sorted { $0.lastAccessedAt > $1.lastAccessedAt }
             .prefix(5)
+            .map { $0 }
+    }
+
+    private var filteredBookmarks: [Bookmark] {
+        guard !query.isEmpty else { return [] }
+        let lowered = query.lowercased()
+        let openURLs = Set(store.tabs.values.compactMap(\.url?.absoluteString))
+        return store.bookmarks
+            .filter { bm in
+                !openURLs.contains(bm.url.absoluteString) &&
+                (bm.title.lowercased().contains(lowered) || bm.url.absoluteString.lowercased().contains(lowered))
+            }
+            .prefix(3)
             .map { $0 }
     }
 
@@ -144,6 +158,11 @@ struct CommandBarView: View {
                 store.selectTab(tab.id)
                 store.isCommandBarVisible = false
             }
+        case .bookmark(let bm):
+            store.loadAddressInput(bm.url.absoluteString)
+            VelaAnimation.withEmphasis {
+                store.isCommandBarVisible = false
+            }
         case .history(let entry):
             store.loadAddressInput(entry.url.absoluteString)
             VelaAnimation.withEmphasis {
@@ -163,11 +182,13 @@ struct CommandBarView: View {
 
 enum CommandBarResult: Identifiable {
     case tab(BrowserTab)
+    case bookmark(Bookmark)
     case history(HistoryEntry)
 
     var id: String {
         switch self {
         case .tab(let tab): return "tab-\(tab.id)"
+        case .bookmark(let bm): return "bookmark-\(bm.id)"
         case .history(let entry): return "history-\(entry.id)"
         }
     }
@@ -224,6 +245,8 @@ private struct CommandBarRow: View {
             } else {
                 Image(systemName: "globe").foregroundStyle(.secondary)
             }
+        case .bookmark:
+            Image(systemName: "star.fill").foregroundStyle(.yellow)
         case .history:
             Image(systemName: "clock").foregroundStyle(.secondary)
         }
@@ -232,6 +255,7 @@ private struct CommandBarRow: View {
     private var resultTitle: String {
         switch result {
         case .tab(let tab): return tab.title
+        case .bookmark(let bm): return bm.title
         case .history(let entry): return entry.title
         }
     }
@@ -239,6 +263,7 @@ private struct CommandBarRow: View {
     private var resultURL: String {
         switch result {
         case .tab(let tab): return tab.url?.absoluteString ?? ""
+        case .bookmark(let bm): return bm.url.absoluteString
         case .history(let entry): return entry.url.absoluteString
         }
     }
@@ -249,6 +274,13 @@ private struct CommandBarRow: View {
         case .tab:
             Text("Tab")
                 .font(.caption2)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
+        case .bookmark:
+            Text("Bookmark")
+                .font(.caption2)
+                .foregroundStyle(.yellow)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))

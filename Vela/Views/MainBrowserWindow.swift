@@ -94,6 +94,12 @@ struct MainBrowserWindow: View {
             VelaAnimation.withEmphasis {
                 store.isCommandBarVisible.toggle()
             }
+
+        case .undoCloseTab:
+            VelaAnimation.withEmphasis {
+                store.undoCloseTab()
+            }
+            addressText = store.activeTab?.url?.absoluteString ?? ""
         }
     }
 }

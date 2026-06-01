@@ -122,6 +122,23 @@ struct BrowserStoreTests {
         #expect(store.tabs[tabID] == nil)
     }
 
+    @Test("undoCloseTab restores the last closed tab")
+    func undoCloseTabRestores() throws {
+        let store = makeStore()
+        store.createTab(url: try #require(URL(string: "https://example.com")))
+        let originalTabID = try #require(store.activeTabID)
+
+        VelaAnimation.withEmphasis {
+            store.closeTab(originalTabID)
+        }
+        #expect(store.tabs[originalTabID] == nil)
+        #expect(store.recentlyClosed.count == 1)
+
+        store.undoCloseTab()
+        #expect(store.recentlyClosed.isEmpty)
+        #expect(store.activeTab?.url?.absoluteString == "https://example.com")
+    }
+
     @Test("deleteWorkspace guards against deleting last workspace")
     func deleteLastWorkspaceGuard() {
         let store = makeStore()

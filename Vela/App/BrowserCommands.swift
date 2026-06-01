@@ -16,6 +16,11 @@ struct BrowserCommands: Commands {
                 commandSink?(.closeTab)
             }
             .keyboardShortcut("w", modifiers: .command)
+
+            Button("Undo Close Tab") {
+                commandSink?(.undoCloseTab)
+            }
+            .keyboardShortcut("z", modifiers: .command)
         }
 
         // MARK: - View Menu (Zoom, Sidebar)
@@ -133,6 +138,7 @@ enum BrowserCommand {
     case findPrevious
     case printPage
     case toggleCommandBar
+    case undoCloseTab
 }
 
 private struct BrowserCommandSinkKey: FocusedValueKey {

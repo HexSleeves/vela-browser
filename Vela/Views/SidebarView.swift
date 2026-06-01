@@ -14,6 +14,10 @@ struct SidebarView: View {
                 if !store.isSidebarCollapsed {
                     tabSections
                         .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+
+                    if !store.bookmarks.isEmpty {
+                        bookmarksSection
+                    }
                 }
 
                 Spacer(minLength: 12)
@@ -134,6 +138,42 @@ struct SidebarView: View {
             insertion: .move(edge: slideDirection).combined(with: .opacity),
             removal: .move(edge: slideDirection == .trailing ? .leading : .trailing).combined(with: .opacity)
         ))
+    }
+
+    private var bookmarksSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Bookmarks")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            ForEach(store.bookmarks.prefix(10)) { bookmark in
+                Button {
+                    store.loadAddressInput(bookmark.url.absoluteString)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "star.fill")
+                            .foregroundStyle(.yellow)
+                            .font(.caption2)
+                            .frame(width: 18)
+
+                        Text(bookmark.title)
+                            .lineLimit(1)
+                            .font(.body)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button("Remove Bookmark", role: .destructive) {
+                        VelaAnimation.withMicro {
+                            store.removeBookmark(bookmark.id)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private var activeTabs: [BrowserTab] {

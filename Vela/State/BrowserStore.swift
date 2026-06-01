@@ -16,7 +16,17 @@ final class BrowserStore {
     var isDownloadsVisible = false
     var downloads: [DownloadItem] = []
     var bookmarks: [Bookmark] = []
+    var recentlyClosed: [ClosedTab] = []
     var history: [HistoryEntry] = []
+
+    struct ClosedTab {
+        let title: String
+        let url: URL?
+        let workspaceID: Workspace.ID
+        let isPinned: Bool
+    }
+
+    private static let maxRecentlyClosed = 10
 
     private static let maxHistoryEntries = 500
 
@@ -107,6 +117,16 @@ final class BrowserStore {
     }
 
     func closeTab(_ tabID: BrowserTab.ID) {
+        // Save to recently closed before removing
+        if let tab = tabs[tabID] {
+            let wsID = workspaces.first(where: { $0.tabIDs.contains(tabID) })?.id ?? activeWorkspaceID
+            let closed = ClosedTab(title: tab.title, url: tab.url, workspaceID: wsID, isPinned: tab.isPinned)
+            recentlyClosed.insert(closed, at: 0)
+            if recentlyClosed.count > Self.maxRecentlyClosed {
+                recentlyClosed = Array(recentlyClosed.prefix(Self.maxRecentlyClosed))
+            }
+        }
+
         tabs.removeValue(forKey: tabID)
         webViewPool.remove(tabID: tabID)
 
@@ -119,6 +139,12 @@ final class BrowserStore {
         }
 
         persist()
+    }
+
+    func undoCloseTab() {
+        guard let closed = recentlyClosed.first else { return }
+        recentlyClosed.removeFirst()
+        createTab(in: closed.workspaceID, url: closed.url, pinned: closed.isPinned)
     }
 
     func selectTab(_ tabID: BrowserTab.ID) {
