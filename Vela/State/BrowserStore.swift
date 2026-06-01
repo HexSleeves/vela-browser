@@ -10,6 +10,8 @@ final class BrowserStore {
     var activeWorkspaceID: Workspace.ID
     var activeTabID: BrowserTab.ID?
     var isSidebarCollapsed = false
+    var isFindBarVisible = false
+    var findText = ""
 
     let webViewPool: WebViewPooling
     private let persistence: BrowserPersistence
@@ -192,6 +194,99 @@ final class BrowserStore {
         persist()
     }
 
+    // MARK: - Navigation
+
+    func goBack() {
+        guard let tabID = activeTabID else { return }
+        webViewPool.goBack(tabID: tabID)
+    }
+
+    func goForward() {
+        guard let tabID = activeTabID else { return }
+        webViewPool.goForward(tabID: tabID)
+    }
+
+    func reload() {
+        guard let tabID = activeTabID else { return }
+        if tabs[tabID]?.isLoading == true {
+            webViewPool.stopLoading(tabID: tabID)
+        } else {
+            webViewPool.reload(tabID: tabID)
+        }
+    }
+
+    // MARK: - Tab Selection by Index
+
+    func selectTabByIndex(_ index: Int) {
+        guard let workspace = activeWorkspace else { return }
+        let tabIDs = workspace.tabIDs
+        guard index >= 0, index < tabIDs.count else { return }
+        selectTab(tabIDs[index])
+    }
+
+    // MARK: - Zoom
+
+    func zoomIn() {
+        guard let tabID = activeTabID, var tab = tabs[tabID] else { return }
+        tab.zoomLevel = min(tab.zoomLevel + 0.1, 3.0)
+        tabs[tabID] = tab
+        webViewPool.setZoom(tab.zoomLevel, tabID: tabID)
+    }
+
+    func zoomOut() {
+        guard let tabID = activeTabID, var tab = tabs[tabID] else { return }
+        tab.zoomLevel = max(tab.zoomLevel - 0.1, 0.3)
+        tabs[tabID] = tab
+        webViewPool.setZoom(tab.zoomLevel, tabID: tabID)
+    }
+
+    func zoomReset() {
+        guard let tabID = activeTabID else { return }
+        tabs[tabID]?.zoomLevel = 1.0
+        webViewPool.setZoom(1.0, tabID: tabID)
+    }
+
+    // MARK: - Find in Page
+
+    func toggleFindBar() {
+        isFindBarVisible.toggle()
+        if !isFindBarVisible {
+            findText = ""
+            if let tabID = activeTabID {
+                webViewPool.clearFind(tabID: tabID)
+            }
+        }
+    }
+
+    func findInPage(_ text: String) {
+        findText = text
+        guard let tabID = activeTabID else { return }
+        // Store the find text in JS for next/previous
+        if let pool = webViewPool as? WebViewPool {
+            let escaped = text.replacingOccurrences(of: "'", with: "\\'")
+            let webView = pool.webView(for: tabID)
+            webView.evaluateJavaScript("window.__velaFindText = '\(escaped)'") { _, _ in }
+        }
+        webViewPool.findInPage(text, tabID: tabID)
+    }
+
+    func findNext() {
+        guard let tabID = activeTabID else { return }
+        webViewPool.findNext(tabID: tabID)
+    }
+
+    func findPrevious() {
+        guard let tabID = activeTabID else { return }
+        webViewPool.findPrevious(tabID: tabID)
+    }
+
+    // MARK: - Print
+
+    func printPage() {
+        guard let tabID = activeTabID else { return }
+        webViewPool.printPage(tabID: tabID)
+    }
+
     func loadAddressInput(_ input: String) {
         let destination = navigationService.destination(for: input)
 
@@ -205,6 +300,16 @@ final class BrowserStore {
         tabs[tabID]?.lastAccessedAt = Date()
         webViewPool.load(destination, in: tabID)
         persist()
+    }
+
+    func updateNavState(_ tabID: BrowserTab.ID, canGoBack: Bool?, canGoForward: Bool?) {
+        guard tabs[tabID] != nil else { return }
+        if let canGoBack {
+            tabs[tabID]?.canGoBack = canGoBack
+        }
+        if let canGoForward {
+            tabs[tabID]?.canGoForward = canGoForward
+        }
     }
 
     func updateTab(_ tabID: BrowserTab.ID, title: String?, url: URL?, isLoading: Bool, estimatedProgress: Double? = nil) {

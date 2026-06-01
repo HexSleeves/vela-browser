@@ -25,6 +25,7 @@
 		94CF5CCA1410F2B8B7D33DC5 /* BrowserTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA566F1AB1994A2BD4B8FB0F /* BrowserTab.swift */; };
 		9B8F8AAF3EC9BAC672CE28B2 /* WebViewPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8B39FCDAC425756A9ACF8E /* WebViewPool.swift */; };
 		A829E218528B9CFBEAD9D7E2 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D87DCF0AE5280C03F13F3DCF /* WebKit.framework */; };
+		A9F5A797941D7D2EF827B7DF /* FindBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69002946774198BCA3F17FB3 /* FindBarView.swift */; };
 		AE28F97327CDE92D5C033C71 /* BrowserWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07753ABE509F168ED8DA863B /* BrowserWebView.swift */; };
 		BF66B39B7D298E37F43A3374 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB8A76F3713ED892A1217B9 /* SidebarView.swift */; };
 		C017F6CF1170B01098FBDA66 /* VelaAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00FD2E3AFD52A87765F716E3 /* VelaAnimation.swift */; };
@@ -57,6 +58,7 @@
 		3531AF8DA60076B3BA2EE706 /* BrowserStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserStoreTests.swift; sourceTree = "<group>"; };
 		493FB4BF39945A547F158C46 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		59E6BACD719C5021172B0387 /* BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCommands.swift; sourceTree = "<group>"; };
+		69002946774198BCA3F17FB3 /* FindBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FindBarView.swift; sourceTree = "<group>"; };
 		789862BF13686674B5EB72A3 /* VelaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VelaApp.swift; sourceTree = "<group>"; };
 		8E30714DD71B37E521CB2525 /* BrowserSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSurfaceView.swift; sourceTree = "<group>"; };
 		9AA7233B6C98BC9D5E70C21B /* BrowserPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserPersistence.swift; sourceTree = "<group>"; };
@@ -131,6 +133,7 @@
 			children = (
 				FA822979FC408526F3391081 /* AddressBar.swift */,
 				8E30714DD71B37E521CB2525 /* BrowserSurfaceView.swift */,
+				69002946774198BCA3F17FB3 /* FindBarView.swift */,
 				F844CA695D8738D581324565 /* MainBrowserWindow.swift */,
 				493FB4BF39945A547F158C46 /* SettingsView.swift */,
 				1DB8A76F3713ED892A1217B9 /* SidebarView.swift */,
@@ -285,6 +288,7 @@
 				94CF5CCA1410F2B8B7D33DC5 /* BrowserTab.swift in Sources */,
 				62E73A20C983D4B81C696FE8 /* BrowserTheme.swift in Sources */,
 				AE28F97327CDE92D5C033C71 /* BrowserWebView.swift in Sources */,
+				A9F5A797941D7D2EF827B7DF /* FindBarView.swift in Sources */,
 				22D340FD06529AD55D09DBFF /* MainBrowserWindow.swift in Sources */,
 				80CF53108E53A146808F74EE /* NavigationService.swift in Sources */,
 				E96A9742279D23CCA59ACDA0 /* SettingsView.swift in Sources */,

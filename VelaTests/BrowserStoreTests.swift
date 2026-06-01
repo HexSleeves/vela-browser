@@ -141,4 +141,15 @@ private final class StubWebViewPool: WebViewPooling {
     func remove(tabID: BrowserTab.ID) {
         removedTabIDs.append(tabID)
     }
+
+    func goBack(tabID: BrowserTab.ID) {}
+    func goForward(tabID: BrowserTab.ID) {}
+    func reload(tabID: BrowserTab.ID) {}
+    func stopLoading(tabID: BrowserTab.ID) {}
+    func setZoom(_ level: Double, tabID: BrowserTab.ID) {}
+    func findInPage(_ text: String, tabID: BrowserTab.ID) {}
+    func findNext(tabID: BrowserTab.ID) {}
+    func findPrevious(tabID: BrowserTab.ID) {}
+    func clearFind(tabID: BrowserTab.ID) {}
+    func printPage(tabID: BrowserTab.ID) {}
 }

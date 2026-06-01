@@ -12,12 +12,23 @@ struct BrowserSurfaceView: View {
                 isFocused: isAddressFocused.wrappedValue,
                 isLoading: store.activeTab?.isLoading ?? false,
                 estimatedProgress: store.activeTab?.estimatedProgress ?? 0,
-                accentColor: store.activeTheme.accent.color
-            ) {
-                store.loadAddressInput(addressText)
-            }
+                canGoBack: store.activeTab?.canGoBack ?? false,
+                canGoForward: store.activeTab?.canGoForward ?? false,
+                isSecure: store.activeTab?.url?.scheme == "https",
+                accentColor: store.activeTheme.accent.color,
+                onSubmit: { store.loadAddressInput(addressText) },
+                onBack: { store.goBack() },
+                onForward: { store.goForward() },
+                onReload: { store.reload() }
+            )
             .focused(isAddressFocused)
             .padding(10)
+
+            if store.isFindBarVisible {
+                FindBarView()
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .padding(.bottom, 4)
+            }
 
             Divider()
 

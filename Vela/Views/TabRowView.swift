@@ -21,9 +21,8 @@ struct TabRowView: View {
             }
         } label: {
             HStack(spacing: 8) {
-                Image(systemName: tab.isPinned ? "pin.fill" : "globe")
-                    .foregroundStyle(.secondary)
-                    .frame(width: 18)
+                tabIcon
+                    .frame(width: 18, height: 18)
 
                 Text(tab.title)
                     .lineLimit(1)
@@ -85,5 +84,43 @@ struct TabRowView: View {
         if isSelected { return 1.0 }
         if isHovered && !isDragging { return 0.8 }
         return 0.0
+    }
+
+    // MARK: - Favicon
+
+    @ViewBuilder
+    private var tabIcon: some View {
+        if tab.isPinned {
+            Image(systemName: "pin.fill")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+        } else if let faviconURL {
+            AsyncImage(url: faviconURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                case .failure:
+                    Image(systemName: "globe")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                default:
+                    Image(systemName: "globe")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+            }
+        } else {
+            Image(systemName: "globe")
+                .foregroundStyle(.secondary)
+                .font(.caption)
+        }
+    }
+
+    /// Google's favicon service URL for the tab's domain.
+    private var faviconURL: URL? {
+        guard let host = tab.url?.host() else { return nil }
+        return URL(string: "https://www.google.com/s2/favicons?domain=\(host)&sz=32")
     }
 }

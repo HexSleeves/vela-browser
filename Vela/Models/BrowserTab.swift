@@ -7,6 +7,9 @@ struct BrowserTab: Identifiable, Codable, Equatable {
     var isPinned: Bool
     var isLoading: Bool
     var estimatedProgress: Double
+    var canGoBack: Bool
+    var canGoForward: Bool
+    var zoomLevel: Double
     var lastAccessedAt: Date
 
     init(
@@ -16,6 +19,9 @@ struct BrowserTab: Identifiable, Codable, Equatable {
         isPinned: Bool = false,
         isLoading: Bool = false,
         estimatedProgress: Double = 0,
+        canGoBack: Bool = false,
+        canGoForward: Bool = false,
+        zoomLevel: Double = 1.0,
         lastAccessedAt: Date = Date()
     ) {
         self.id = id
@@ -24,6 +30,9 @@ struct BrowserTab: Identifiable, Codable, Equatable {
         self.isPinned = isPinned
         self.isLoading = isLoading
         self.estimatedProgress = estimatedProgress
+        self.canGoBack = canGoBack
+        self.canGoForward = canGoForward
+        self.zoomLevel = zoomLevel
         self.lastAccessedAt = lastAccessedAt
     }
 }

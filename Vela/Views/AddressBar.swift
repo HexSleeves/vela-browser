@@ -5,15 +5,27 @@ struct AddressBar: View {
     var isFocused: Bool
     var isLoading: Bool = false
     var estimatedProgress: Double = 0
+    var canGoBack: Bool = false
+    var canGoForward: Bool = false
+    var isSecure: Bool = false
     var accentColor: Color = .accentColor
     var onSubmit: () -> Void
+    var onBack: () -> Void = {}
+    var onForward: () -> Void = {}
+    var onReload: () -> Void = {}
 
     @State private var submitTrigger = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
+        HStack(spacing: 6) {
+            // Navigation buttons
+            navigationButtons
+
+            // Security / Search icon
+            Image(systemName: isSecure ? "lock.fill" : "magnifyingglass")
+                .foregroundStyle(isSecure ? .green : .secondary)
+                .font(.caption)
+                .frame(width: 16)
 
             TextField("Search or enter website", text: $text)
                 .textFieldStyle(.plain)
@@ -21,8 +33,20 @@ struct AddressBar: View {
                     submitTrigger.toggle()
                     onSubmit()
                 }
+
+            // Reload / Stop button
+            Button {
+                onReload()
+            } label: {
+                Image(systemName: isLoading ? "xmark" : "arrow.clockwise")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.plain)
+            .help(isLoading ? "Stop Loading" : "Reload")
         }
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 10)
         .padding(.vertical, isFocused ? 10 : 8)
         .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
         .overlay(progressBar, alignment: .bottom)
@@ -41,6 +65,34 @@ struct AddressBar: View {
             radius: isFocused ? 6 : 0
         )
         .animation(VelaAnimation.micro, value: isFocused)
+    }
+
+    private var navigationButtons: some View {
+        HStack(spacing: 2) {
+            Button {
+                onBack()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.caption.weight(.semibold))
+                    .frame(width: 20, height: 20)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canGoBack)
+            .opacity(canGoBack ? 1 : 0.3)
+            .help("Back (⌘[)")
+
+            Button {
+                onForward()
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .frame(width: 20, height: 20)
+            }
+            .buttonStyle(.plain)
+            .disabled(!canGoForward)
+            .opacity(canGoForward ? 1 : 0.3)
+            .help("Forward (⌘])")
+        }
     }
 
     @ViewBuilder

@@ -30,13 +30,58 @@ struct MainBrowserWindow: View {
             }
             addressText = ""
             isAddressFocused = true
+
+        case .closeTab:
+            guard let tabID = store.activeTabID else { return }
+            VelaAnimation.withEmphasis {
+                store.closeTab(tabID)
+            }
+            addressText = store.activeTab?.url?.absoluteString ?? ""
+
         case .focusAddressBar:
             addressText = store.activeTab?.url?.absoluteString ?? ""
             isAddressFocused = true
+
         case .toggleSidebar:
             VelaAnimation.withLayout {
                 store.isSidebarCollapsed.toggle()
             }
+
+        case .goBack:
+            store.goBack()
+
+        case .goForward:
+            store.goForward()
+
+        case .reload:
+            store.reload()
+
+        case .zoomIn:
+            store.zoomIn()
+
+        case .zoomOut:
+            store.zoomOut()
+
+        case .zoomReset:
+            store.zoomReset()
+
+        case .selectTabByIndex(let index):
+            store.selectTabByIndex(index)
+            addressText = store.activeTab?.url?.absoluteString ?? ""
+
+        case .toggleFind:
+            VelaAnimation.withMicro {
+                store.toggleFindBar()
+            }
+
+        case .findNext:
+            store.findNext()
+
+        case .findPrevious:
+            store.findPrevious()
+
+        case .printPage:
+            store.printPage()
         }
     }
 }
