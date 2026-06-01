@@ -1,0 +1,530 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0CD68D027EC9968C8A74E617 /* BrowserSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E30714DD71B37E521CB2525 /* BrowserSurfaceView.swift */; };
+		22D340FD06529AD55D09DBFF /* MainBrowserWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = F844CA695D8738D581324565 /* MainBrowserWindow.swift */; };
+		315C6F88E08A59A74D0C75F5 /* AddressBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA822979FC408526F3391081 /* AddressBar.swift */; };
+		3702E80F9DB1CDF96219B0C5 /* BrowserStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3531AF8DA60076B3BA2EE706 /* BrowserStoreTests.swift */; };
+		402497A834B4B8C713872AC0 /* NavigationServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2CDC25496C42E81860186C35 /* NavigationServiceTests.swift */; };
+		40E6E4DDE32E7A2683ACD289 /* BrowserPersistenceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06CA3FA9584D12FCFEF9658D /* BrowserPersistenceTests.swift */; };
+		419EED1103F415AE7083C7B2 /* BrowserPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA7233B6C98BC9D5E70C21B /* BrowserPersistence.swift */; };
+		42383D6536D6395E97A466F7 /* TabRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 001766702EF9A56ED918A53E /* TabRowView.swift */; };
+		556023E66D92D94734345009 /* TabSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0456909CA1DD7DBEDB54248F /* TabSectionView.swift */; };
+		62E73A20C983D4B81C696FE8 /* BrowserTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C250110074B6A3AC09884E /* BrowserTheme.swift */; };
+		6A2DC37BC3CA8FD4F8F70281 /* Workspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28C2B8E41161D4765ABD76AC /* Workspace.swift */; };
+		71FC8570638D171795119567 /* BrowserStateSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD2DFDF9D130C9559DA9B52B /* BrowserStateSnapshot.swift */; };
+		72CB8F92DDA7BD6155071AD1 /* VelaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789862BF13686674B5EB72A3 /* VelaApp.swift */; };
+		80CF53108E53A146808F74EE /* NavigationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA085B09F7002FF603DBAC1 /* NavigationService.swift */; };
+		83B4273D328EF85D437C1AC6 /* BrowserCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59E6BACD719C5021172B0387 /* BrowserCommands.swift */; };
+		94CF5CCA1410F2B8B7D33DC5 /* BrowserTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA566F1AB1994A2BD4B8FB0F /* BrowserTab.swift */; };
+		9B8F8AAF3EC9BAC672CE28B2 /* WebViewPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A8B39FCDAC425756A9ACF8E /* WebViewPool.swift */; };
+		A829E218528B9CFBEAD9D7E2 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D87DCF0AE5280C03F13F3DCF /* WebKit.framework */; };
+		AE28F97327CDE92D5C033C71 /* BrowserWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07753ABE509F168ED8DA863B /* BrowserWebView.swift */; };
+		BF66B39B7D298E37F43A3374 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1DB8A76F3713ED892A1217B9 /* SidebarView.swift */; };
+		E46D3BE87472E68171DA233C /* BrowserStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A5E772491295CED935B8CC /* BrowserStore.swift */; };
+		E96A9742279D23CCA59ACDA0 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 493FB4BF39945A547F158C46 /* SettingsView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		3A1F5677571FEAEEC349EA44 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7FD476A6B78E6892F5E407ED /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 887543FE98EDDB51C0D26FB2;
+			remoteInfo = Vela;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		001766702EF9A56ED918A53E /* TabRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabRowView.swift; sourceTree = "<group>"; };
+		0456909CA1DD7DBEDB54248F /* TabSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSectionView.swift; sourceTree = "<group>"; };
+		06CA3FA9584D12FCFEF9658D /* BrowserPersistenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserPersistenceTests.swift; sourceTree = "<group>"; };
+		07753ABE509F168ED8DA863B /* BrowserWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserWebView.swift; sourceTree = "<group>"; };
+		08A5E772491295CED935B8CC /* BrowserStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserStore.swift; sourceTree = "<group>"; };
+		1DB8A76F3713ED892A1217B9 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		28C2B8E41161D4765ABD76AC /* Workspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Workspace.swift; sourceTree = "<group>"; };
+		2A8B39FCDAC425756A9ACF8E /* WebViewPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewPool.swift; sourceTree = "<group>"; };
+		2CDC25496C42E81860186C35 /* NavigationServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationServiceTests.swift; sourceTree = "<group>"; };
+		32C250110074B6A3AC09884E /* BrowserTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTheme.swift; sourceTree = "<group>"; };
+		3531AF8DA60076B3BA2EE706 /* BrowserStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserStoreTests.swift; sourceTree = "<group>"; };
+		493FB4BF39945A547F158C46 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		59E6BACD719C5021172B0387 /* BrowserCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCommands.swift; sourceTree = "<group>"; };
+		789862BF13686674B5EB72A3 /* VelaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VelaApp.swift; sourceTree = "<group>"; };
+		8E30714DD71B37E521CB2525 /* BrowserSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSurfaceView.swift; sourceTree = "<group>"; };
+		9AA7233B6C98BC9D5E70C21B /* BrowserPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserPersistence.swift; sourceTree = "<group>"; };
+		AA566F1AB1994A2BD4B8FB0F /* BrowserTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTab.swift; sourceTree = "<group>"; };
+		C1078DFACB04854902CB04AA /* VelaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VelaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		CD2DFDF9D130C9559DA9B52B /* BrowserStateSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserStateSnapshot.swift; sourceTree = "<group>"; };
+		D87DCF0AE5280C03F13F3DCF /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		DB48061975AD87F58267ABB3 /* Vela.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Vela.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		DCA085B09F7002FF603DBAC1 /* NavigationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationService.swift; sourceTree = "<group>"; };
+		F844CA695D8738D581324565 /* MainBrowserWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainBrowserWindow.swift; sourceTree = "<group>"; };
+		FA822979FC408526F3391081 /* AddressBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddressBar.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		99A162DEA9F9BBFB648466BA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A829E218528B9CFBEAD9D7E2 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		03566385622DC1322E18D89B /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D87DCF0AE5280C03F13F3DCF /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		1C4AE35A05193BF5FE4A7EF4 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				9AA7233B6C98BC9D5E70C21B /* BrowserPersistence.swift */,
+				DCA085B09F7002FF603DBAC1 /* NavigationService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		30B43768D32E64A9A5EDCA3D /* VelaTests */ = {
+			isa = PBXGroup;
+			children = (
+				06CA3FA9584D12FCFEF9658D /* BrowserPersistenceTests.swift */,
+				3531AF8DA60076B3BA2EE706 /* BrowserStoreTests.swift */,
+				2CDC25496C42E81860186C35 /* NavigationServiceTests.swift */,
+			);
+			path = VelaTests;
+			sourceTree = "<group>";
+		};
+		483BF04F79F6240146C6B63F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DB48061975AD87F58267ABB3 /* Vela.app */,
+				C1078DFACB04854902CB04AA /* VelaTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6CF3A9E0CB5431DE523880F7 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				FA822979FC408526F3391081 /* AddressBar.swift */,
+				8E30714DD71B37E521CB2525 /* BrowserSurfaceView.swift */,
+				F844CA695D8738D581324565 /* MainBrowserWindow.swift */,
+				493FB4BF39945A547F158C46 /* SettingsView.swift */,
+				1DB8A76F3713ED892A1217B9 /* SidebarView.swift */,
+				001766702EF9A56ED918A53E /* TabRowView.swift */,
+				0456909CA1DD7DBEDB54248F /* TabSectionView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		76FBB74658D664F4F3F40A89 /* Vela */ = {
+			isa = PBXGroup;
+			children = (
+				DD8CAB57B512C6311633A8CD /* App */,
+				A1699D7897A6FA60B5DC4E26 /* Models */,
+				1C4AE35A05193BF5FE4A7EF4 /* Services */,
+				C0E1A65E4B7FB79B930CC342 /* State */,
+				6CF3A9E0CB5431DE523880F7 /* Views */,
+				E8C509D18BBC2D167A9B48D2 /* Web */,
+			);
+			path = Vela;
+			sourceTree = "<group>";
+		};
+		8D8AC28433B2AC935501E5A2 = {
+			isa = PBXGroup;
+			children = (
+				76FBB74658D664F4F3F40A89 /* Vela */,
+				30B43768D32E64A9A5EDCA3D /* VelaTests */,
+				03566385622DC1322E18D89B /* Frameworks */,
+				483BF04F79F6240146C6B63F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1699D7897A6FA60B5DC4E26 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				CD2DFDF9D130C9559DA9B52B /* BrowserStateSnapshot.swift */,
+				AA566F1AB1994A2BD4B8FB0F /* BrowserTab.swift */,
+				32C250110074B6A3AC09884E /* BrowserTheme.swift */,
+				28C2B8E41161D4765ABD76AC /* Workspace.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		C0E1A65E4B7FB79B930CC342 /* State */ = {
+			isa = PBXGroup;
+			children = (
+				08A5E772491295CED935B8CC /* BrowserStore.swift */,
+			);
+			path = State;
+			sourceTree = "<group>";
+		};
+		DD8CAB57B512C6311633A8CD /* App */ = {
+			isa = PBXGroup;
+			children = (
+				59E6BACD719C5021172B0387 /* BrowserCommands.swift */,
+				789862BF13686674B5EB72A3 /* VelaApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		E8C509D18BBC2D167A9B48D2 /* Web */ = {
+			isa = PBXGroup;
+			children = (
+				07753ABE509F168ED8DA863B /* BrowserWebView.swift */,
+				2A8B39FCDAC425756A9ACF8E /* WebViewPool.swift */,
+			);
+			path = Web;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		887543FE98EDDB51C0D26FB2 /* Vela */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 6E36DFB38ED9B78C5432D865 /* Build configuration list for PBXNativeTarget "Vela" */;
+			buildPhases = (
+				41EE8B5767B0C17BE620D5EB /* Sources */,
+				99A162DEA9F9BBFB648466BA /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Vela;
+			packageProductDependencies = (
+			);
+			productName = Vela;
+			productReference = DB48061975AD87F58267ABB3 /* Vela.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BCCFD8D037ED6DA65F70506A /* VelaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EBE048412C188E0C02EB3FBB /* Build configuration list for PBXNativeTarget "VelaTests" */;
+			buildPhases = (
+				ED0A716E8CBDA2A819B54C5D /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				0A16816192FC832CFD7D6BBB /* PBXTargetDependency */,
+			);
+			name = VelaTests;
+			packageProductDependencies = (
+			);
+			productName = VelaTests;
+			productReference = C1078DFACB04854902CB04AA /* VelaTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		7FD476A6B78E6892F5E407ED /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 070106BC6C9C9A3557F945E6 /* Build configuration list for PBXProject "Vela" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 8D8AC28433B2AC935501E5A2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 483BF04F79F6240146C6B63F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				887543FE98EDDB51C0D26FB2 /* Vela */,
+				BCCFD8D037ED6DA65F70506A /* VelaTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		41EE8B5767B0C17BE620D5EB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				315C6F88E08A59A74D0C75F5 /* AddressBar.swift in Sources */,
+				83B4273D328EF85D437C1AC6 /* BrowserCommands.swift in Sources */,
+				419EED1103F415AE7083C7B2 /* BrowserPersistence.swift in Sources */,
+				71FC8570638D171795119567 /* BrowserStateSnapshot.swift in Sources */,
+				E46D3BE87472E68171DA233C /* BrowserStore.swift in Sources */,
+				0CD68D027EC9968C8A74E617 /* BrowserSurfaceView.swift in Sources */,
+				94CF5CCA1410F2B8B7D33DC5 /* BrowserTab.swift in Sources */,
+				62E73A20C983D4B81C696FE8 /* BrowserTheme.swift in Sources */,
+				AE28F97327CDE92D5C033C71 /* BrowserWebView.swift in Sources */,
+				22D340FD06529AD55D09DBFF /* MainBrowserWindow.swift in Sources */,
+				80CF53108E53A146808F74EE /* NavigationService.swift in Sources */,
+				E96A9742279D23CCA59ACDA0 /* SettingsView.swift in Sources */,
+				BF66B39B7D298E37F43A3374 /* SidebarView.swift in Sources */,
+				42383D6536D6395E97A466F7 /* TabRowView.swift in Sources */,
+				556023E66D92D94734345009 /* TabSectionView.swift in Sources */,
+				72CB8F92DDA7BD6155071AD1 /* VelaApp.swift in Sources */,
+				9B8F8AAF3EC9BAC672CE28B2 /* WebViewPool.swift in Sources */,
+				6A2DC37BC3CA8FD4F8F70281 /* Workspace.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ED0A716E8CBDA2A819B54C5D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				40E6E4DDE32E7A2683ACD289 /* BrowserPersistenceTests.swift in Sources */,
+				3702E80F9DB1CDF96219B0C5 /* BrowserStoreTests.swift in Sources */,
+				402497A834B4B8C713872AC0 /* NavigationServiceTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		0A16816192FC832CFD7D6BBB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 887543FE98EDDB51C0D26FB2 /* Vela */;
+			targetProxy = 3A1F5677571FEAEEC349EA44 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1CEE218FF8A747D74AC0ED38 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.lecoqjacob.vela;
+				PRODUCT_NAME = Vela;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		33385A60476E304021E1BEE4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.lecoqjacob.VelaTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vela.app/Contents/MacOS/Vela";
+			};
+			name = Debug;
+		};
+		476CFC287C549CE5B64C8F41 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		C06002D0C3EF0D1741FEDF3F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.lecoqjacob.VelaTests;
+				SDKROOT = macosx;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Vela.app/Contents/MacOS/Vela";
+			};
+			name = Release;
+		};
+		D79908D40D80D98CCA71B49C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		D7AB7837F21C8FEF021F50B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = dev.lecoqjacob.vela;
+				PRODUCT_NAME = Vela;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		070106BC6C9C9A3557F945E6 /* Build configuration list for PBXProject "Vela" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				476CFC287C549CE5B64C8F41 /* Debug */,
+				D79908D40D80D98CCA71B49C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		6E36DFB38ED9B78C5432D865 /* Build configuration list for PBXNativeTarget "Vela" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D7AB7837F21C8FEF021F50B9 /* Debug */,
+				1CEE218FF8A747D74AC0ED38 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EBE048412C188E0C02EB3FBB /* Build configuration list for PBXNativeTarget "VelaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				33385A60476E304021E1BEE4 /* Debug */,
+				C06002D0C3EF0D1741FEDF3F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 7FD476A6B78E6892F5E407ED /* Project object */;
+}

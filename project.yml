@@ -1,0 +1,33 @@
+name: Vela
+options:
+  bundleIdPrefix: dev.lecoqjacob
+  deploymentTarget:
+    macOS: "14.0"
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+targets:
+  Vela:
+    type: application
+    platform: macOS
+    sources:
+      - path: Vela
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.lecoqjacob.vela
+        PRODUCT_NAME: Vela
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+    dependencies:
+      - sdk: WebKit.framework
+  VelaTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: VelaTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+    dependencies:
+      - target: Vela
