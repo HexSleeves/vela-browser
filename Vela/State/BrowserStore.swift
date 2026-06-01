@@ -19,6 +19,9 @@ final class BrowserStore {
     var recentlyClosed: [ClosedTab] = []
     var history: [HistoryEntry] = []
     var sslExceptions: Set<String> = [] // Hosts the user chose "proceed anyway" for
+    var splitTabID: BrowserTab.ID? // Second tab in split view
+    var boosts: [Boost] = []
+    var tabGroups: [TabGroup] = []
 
     struct ClosedTab {
         let title: String
@@ -42,6 +45,8 @@ final class BrowserStore {
             let store = BrowserStore(snapshot: snapshot, persistence: persistence)
             store.loadHistory()
             store.loadBookmarks()
+            store.loadBoosts()
+            store.archiveStaleTabsIfNeeded()
             return store
         }
 
@@ -76,6 +81,9 @@ final class BrowserStore {
         self.webViewPool = webViewPool
         self.downloadManager = DownloadManager()
         self.downloadManager.store = self
+        if let pool = webViewPool as? WebViewPool {
+            pool.store = self
+        }
     }
 
     var activeWorkspace: Workspace? {
@@ -361,6 +369,138 @@ final class BrowserStore {
         webViewPool.findPrevious(tabID: tabID)
     }
 
+    // MARK: - Tab Groups
+
+    func createTabGroup(name: String) {
+        let group = TabGroup(name: name)
+        tabGroups.append(group)
+        persist()
+    }
+
+    func renameTabGroup(_ groupID: TabGroup.ID, name: String) {
+        guard let index = tabGroups.firstIndex(where: { $0.id == groupID }) else { return }
+        tabGroups[index].name = name
+        persist()
+    }
+
+    func deleteTabGroup(_ groupID: TabGroup.ID) {
+        tabGroups.removeAll { $0.id == groupID }
+        // Tabs in the group stay in workspace.tabIDs — they just become ungrouped
+        persist()
+    }
+
+    func moveTabToGroup(_ tabID: BrowserTab.ID, groupID: TabGroup.ID?) {
+        // Remove from all groups first
+        for index in tabGroups.indices {
+            tabGroups[index].tabIDs.removeAll { $0 == tabID }
+        }
+        // Add to target group
+        if let groupID, let index = tabGroups.firstIndex(where: { $0.id == groupID }) {
+            tabGroups[index].tabIDs.append(tabID)
+        }
+        persist()
+    }
+
+    func toggleGroupCollapse(_ groupID: TabGroup.ID) {
+        guard let index = tabGroups.firstIndex(where: { $0.id == groupID }) else { return }
+        tabGroups[index].isCollapsed.toggle()
+    }
+
+    func ungroupedTabIDs(in workspace: Workspace) -> [BrowserTab.ID] {
+        let groupedIDs = Set(tabGroups.flatMap(\.tabIDs))
+        return workspace.tabIDs.filter { id in
+            !(tabs[id]?.isPinned ?? false) && !groupedIDs.contains(id)
+        }
+    }
+
+    // MARK: - Boosts
+
+    func boostsForHost(_ host: String) -> [Boost] {
+        boosts.filter { $0.isEnabled && $0.matches(host: host) }
+    }
+
+    func addBoost(_ boost: Boost) {
+        boosts.append(boost)
+        persistBoosts()
+    }
+
+    func removeBoost(_ id: Boost.ID) {
+        boosts.removeAll { $0.id == id }
+        persistBoosts()
+    }
+
+    func toggleBoost(_ id: Boost.ID) {
+        guard let index = boosts.firstIndex(where: { $0.id == id }) else { return }
+        boosts[index].isEnabled.toggle()
+        persistBoosts()
+    }
+
+    private func persistBoosts() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "boosts.json")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? JSONEncoder().encode(boosts).write(to: url, options: [.atomic])
+    }
+
+    func loadBoosts() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "boosts.json")
+        guard let data = try? Data(contentsOf: url),
+              let entries = try? JSONDecoder().decode([Boost].self, from: data) else { return }
+        boosts = entries
+    }
+
+    // MARK: - Auto-Archive
+
+    func archiveStaleTabsIfNeeded() {
+        let thresholdDays = UserDefaults.standard.integer(forKey: "archiveThresholdDays")
+        let days = thresholdDays > 0 ? thresholdDays : 7
+        let cutoff = Date().addingTimeInterval(-Double(days * 86400))
+
+        for wsIndex in workspaces.indices {
+            var toArchive: [BrowserTab.ID] = []
+            for tabID in workspaces[wsIndex].tabIDs {
+                guard let tab = tabs[tabID],
+                      tab.lastAccessedAt < cutoff,
+                      tabID != activeTabID,
+                      !tab.isPinned else { continue }
+                toArchive.append(tabID)
+            }
+            for tabID in toArchive {
+                workspaces[wsIndex].tabIDs.removeAll { $0 == tabID }
+                workspaces[wsIndex].archivedTabIDs.append(tabID)
+            }
+        }
+        if workspaces.contains(where: { !$0.archivedTabIDs.isEmpty }) {
+            persist()
+        }
+    }
+
+    func restoreArchivedTab(_ tabID: BrowserTab.ID) {
+        for wsIndex in workspaces.indices {
+            if workspaces[wsIndex].archivedTabIDs.contains(tabID) {
+                workspaces[wsIndex].archivedTabIDs.removeAll { $0 == tabID }
+                workspaces[wsIndex].tabIDs.append(tabID)
+                selectTab(tabID)
+                persist()
+                return
+            }
+        }
+    }
+
+    // MARK: - Split View
+
+    func openInSplit(_ tabID: BrowserTab.ID) {
+        guard tabs[tabID] != nil, tabID != activeTabID else { return }
+        splitTabID = tabID
+    }
+
+    func closeSplit() {
+        splitTabID = nil
+    }
+
     // MARK: - Error Handling
 
     func setTabError(_ tabID: BrowserTab.ID, description: String, code: Int) {
@@ -419,6 +559,15 @@ final class BrowserStore {
         guard let data = try? Data(contentsOf: bookmarksURL),
               let entries = try? JSONDecoder().decode([Bookmark].self, from: data) else { return }
         bookmarks = entries
+    }
+
+    // MARK: - Reader Mode
+
+    func toggleReaderMode() {
+        guard let tabID = activeTabID else { return }
+        let newState = !(tabs[tabID]?.isReaderMode ?? false)
+        tabs[tabID]?.isReaderMode = newState
+        webViewPool.toggleReaderMode(tabID: tabID, enable: newState)
     }
 
     // MARK: - Audio

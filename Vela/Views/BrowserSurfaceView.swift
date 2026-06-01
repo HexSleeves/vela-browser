@@ -17,11 +17,13 @@ struct BrowserSurfaceView: View {
                 isSecure: store.activeTab?.url?.scheme == "https",
                 accentColor: store.activeTheme.accent.color,
                 isBookmarked: store.activeTab?.url.flatMap { store.isBookmarked($0) } ?? false,
+                isReaderMode: store.activeTab?.isReaderMode ?? false,
                 onSubmit: { store.loadAddressInput(addressText) },
                 onBack: { store.goBack() },
                 onForward: { store.goForward() },
                 onReload: { store.reload() },
-                onToggleBookmark: { store.toggleBookmark() }
+                onToggleBookmark: { store.toggleBookmark() },
+                onToggleReader: { store.toggleReaderMode() }
             )
             .focused(isAddressFocused)
             .padding(10)
@@ -41,8 +43,19 @@ struct BrowserSurfaceView: View {
                     host: tab.url?.host()
                 )
             } else if let tabID = store.activeTabID, store.activeTab?.url != nil {
-                BrowserWebView(tabID: tabID)
-                    .id(tabID)
+                if let splitID = store.splitTabID {
+                    // Split view: two web views side by side
+                    HSplitView {
+                        BrowserWebView(tabID: tabID)
+                            .id(tabID)
+
+                        BrowserWebView(tabID: splitID)
+                            .id(splitID)
+                    }
+                } else {
+                    BrowserWebView(tabID: tabID)
+                        .id(tabID)
+                }
             } else {
                 NewTabPageView()
             }

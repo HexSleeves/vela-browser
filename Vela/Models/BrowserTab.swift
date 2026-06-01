@@ -12,6 +12,7 @@ struct BrowserTab: Identifiable, Codable, Equatable {
     var zoomLevel: Double
     var isPlayingAudio: Bool
     var isMuted: Bool
+    var isReaderMode: Bool
     var errorDescription: String?
     var errorCode: Int?
     var lastAccessedAt: Date
@@ -28,6 +29,7 @@ struct BrowserTab: Identifiable, Codable, Equatable {
         zoomLevel: Double = 1.0,
         isPlayingAudio: Bool = false,
         isMuted: Bool = false,
+        isReaderMode: Bool = false,
         lastAccessedAt: Date = Date()
     ) {
         self.id = id
@@ -41,6 +43,7 @@ struct BrowserTab: Identifiable, Codable, Equatable {
         self.zoomLevel = zoomLevel
         self.isPlayingAudio = isPlayingAudio
         self.isMuted = isMuted
+        self.isReaderMode = isReaderMode
         self.lastAccessedAt = lastAccessedAt
     }
 }

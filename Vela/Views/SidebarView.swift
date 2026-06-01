@@ -18,6 +18,10 @@ struct SidebarView: View {
                     if !store.bookmarks.isEmpty {
                         bookmarksSection
                     }
+
+                    if let ws = store.activeWorkspace, !ws.archivedTabIDs.isEmpty {
+                        archiveSection(ws.archivedTabIDs)
+                    }
                 }
 
                 Spacer(minLength: 12)
@@ -129,7 +133,20 @@ struct SidebarView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 TabSectionView(title: "Pinned", tabs: activeTabs.filter(\.isPinned), isPinned: true)
-                TabSectionView(title: "Tabs", tabs: activeTabs.filter { !$0.isPinned }, isPinned: false)
+
+                // Tab groups
+                ForEach(store.tabGroups) { group in
+                    tabGroupView(group)
+                }
+
+                // Ungrouped tabs
+                let ungroupedIDs = store.tabGroups.isEmpty
+                    ? activeTabs.filter { !$0.isPinned }.map(\.id)
+                    : store.ungroupedTabIDs(in: store.activeWorkspace ?? store.workspaces[0])
+                let ungroupedTabs = ungroupedIDs.compactMap { store.tabs[$0] }
+                if !ungroupedTabs.isEmpty {
+                    TabSectionView(title: store.tabGroups.isEmpty ? "Tabs" : "Ungrouped", tabs: ungroupedTabs, isPinned: false)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -172,6 +189,91 @@ struct SidebarView: View {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    private func tabGroupView(_ group: TabGroup) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Button {
+                VelaAnimation.withMicro {
+                    store.toggleGroupCollapse(group.id)
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: group.isCollapsed ? "chevron.right" : "chevron.down")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .frame(width: 12)
+
+                    Text(group.name)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .textCase(.uppercase)
+
+                    Spacer()
+
+                    Text("\(group.tabIDs.count)")
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                Button("Rename…") {
+                    let alert = NSAlert()
+                    alert.messageText = "Rename Group"
+                    let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+                    field.stringValue = group.name
+                    alert.accessoryView = field
+                    alert.addButton(withTitle: "Rename")
+                    alert.addButton(withTitle: "Cancel")
+                    if alert.runModal() == .alertFirstButtonReturn, !field.stringValue.isEmpty {
+                        store.renameTabGroup(group.id, name: field.stringValue)
+                    }
+                }
+                Button("Delete Group", role: .destructive) {
+                    VelaAnimation.withEmphasis {
+                        store.deleteTabGroup(group.id)
+                    }
+                }
+            }
+
+            if !group.isCollapsed {
+                let groupTabs = group.tabIDs.compactMap { store.tabs[$0] }
+                TabSectionView(title: "", tabs: groupTabs, isPinned: false)
+            }
+        }
+    }
+
+    private func archiveSection(_ archivedIDs: [BrowserTab.ID]) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Archive")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+
+            ForEach(archivedIDs.compactMap({ store.tabs[$0] })) { tab in
+                Button {
+                    VelaAnimation.withEmphasis {
+                        store.restoreArchivedTab(tab.id)
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "archivebox")
+                            .foregroundStyle(.secondary)
+                            .font(.caption2)
+                            .frame(width: 18)
+
+                        Text(tab.title)
+                            .lineLimit(1)
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 5)
+                }
+                .buttonStyle(.plain)
             }
         }
     }

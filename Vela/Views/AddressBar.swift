@@ -10,11 +10,13 @@ struct AddressBar: View {
     var isSecure: Bool = false
     var accentColor: Color = .accentColor
     var isBookmarked: Bool = false
+    var isReaderMode: Bool = false
     var onSubmit: () -> Void
     var onBack: () -> Void = {}
     var onForward: () -> Void = {}
     var onReload: () -> Void = {}
     var onToggleBookmark: () -> Void = {}
+    var onToggleReader: () -> Void = {}
 
     @State private var submitTrigger = false
 
@@ -35,6 +37,18 @@ struct AddressBar: View {
                     submitTrigger.toggle()
                     onSubmit()
                 }
+
+            // Reader mode toggle
+            Button {
+                onToggleReader()
+            } label: {
+                Image(systemName: isReaderMode ? "book.fill" : "book")
+                    .font(.caption)
+                    .foregroundStyle(isReaderMode ? Color.accentColor : .secondary)
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.plain)
+            .help(isReaderMode ? "Exit Reader Mode" : "Reader Mode")
 
             // Bookmark toggle
             Button {

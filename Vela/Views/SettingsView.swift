@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(BrowserStore.self) private var store
     @AppStorage("searchEngine") private var searchEngine: String = "google"
     @AppStorage("blockPopups") private var blockPopups: Bool = true
+    @AppStorage("archiveThresholdDays") private var archiveThresholdDays: Int = 7
 
     private enum Tab: String {
         case general, appearance, about
@@ -58,6 +59,14 @@ struct SettingsView: View {
 
             Section("Pop-ups") {
                 Toggle("Block Pop-up Windows", isOn: $blockPopups)
+            }
+
+            Section("Tab Archive") {
+                Stepper("Archive after \(archiveThresholdDays) days", value: $archiveThresholdDays, in: 1...90)
+
+                Text("Tabs not accessed within this period move to the Archive section.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Privacy") {

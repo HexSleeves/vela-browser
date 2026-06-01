@@ -207,4 +207,5 @@ private final class StubWebViewPool: WebViewPooling {
     func clearFind(tabID: BrowserTab.ID) {}
     func printPage(tabID: BrowserTab.ID) {}
     func setMuted(_ muted: Bool, tabID: BrowserTab.ID) {}
+    func toggleReaderMode(tabID: BrowserTab.ID, enable: Bool) {}
 }

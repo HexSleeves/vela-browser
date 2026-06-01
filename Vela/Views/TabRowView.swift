@@ -84,6 +84,37 @@ struct TabRowView: View {
                 store.setPinned(tab.id, isPinned: !tab.isPinned)
             }
 
+            if tab.id != store.activeTabID {
+                Button("Open in Split View") {
+                    VelaAnimation.withLayout {
+                        store.openInSplit(tab.id)
+                    }
+                }
+            }
+
+            if store.splitTabID != nil {
+                Button("Close Split View") {
+                    VelaAnimation.withLayout {
+                        store.closeSplit()
+                    }
+                }
+            }
+
+            if !store.tabGroups.isEmpty {
+                Menu("Move to Group") {
+                    Button("Ungrouped") {
+                        store.moveTabToGroup(tab.id, groupID: nil)
+                    }
+                    ForEach(store.tabGroups) { group in
+                        Button(group.name) {
+                            store.moveTabToGroup(tab.id, groupID: group.id)
+                        }
+                    }
+                }
+            }
+
+            Divider()
+
             Button("Close Tab") {
                 VelaAnimation.withEmphasis {
                     store.closeTab(tab.id)
