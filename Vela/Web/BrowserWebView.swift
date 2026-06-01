@@ -94,6 +94,7 @@ struct BrowserWebView: NSViewRepresentable {
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             Task { @MainActor in
+                store?.clearTabError(tabID)
                 store?.updateTab(tabID, title: webView.title, url: webView.url, isLoading: true, estimatedProgress: 0.05)
                 store?.updateNavState(tabID, canGoBack: webView.canGoBack, canGoForward: webView.canGoForward)
             }
@@ -110,6 +111,10 @@ struct BrowserWebView: NSViewRepresentable {
             Task { @MainActor in
                 store?.updateTab(tabID, title: webView.title, url: webView.url, isLoading: false, estimatedProgress: 0)
                 store?.updateNavState(tabID, canGoBack: webView.canGoBack, canGoForward: webView.canGoForward)
+                let nsError = error as NSError
+                if nsError.code != NSURLErrorCancelled {
+                    store?.setTabError(tabID, description: nsError.localizedDescription, code: nsError.code)
+                }
             }
         }
 
@@ -117,6 +122,29 @@ struct BrowserWebView: NSViewRepresentable {
             Task { @MainActor in
                 store?.updateTab(tabID, title: webView.title, url: webView.url, isLoading: false, estimatedProgress: 0)
                 store?.updateNavState(tabID, canGoBack: webView.canGoBack, canGoForward: webView.canGoForward)
+                let nsError = error as NSError
+                if nsError.code != NSURLErrorCancelled {
+                    store?.setTabError(tabID, description: nsError.localizedDescription, code: nsError.code)
+                }
+            }
+        }
+
+        // MARK: - WKNavigationDelegate: SSL Challenges
+
+        func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+            guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
+                  let serverTrust = challenge.protectionSpace.serverTrust else {
+                completionHandler(.performDefaultHandling, nil)
+                return
+            }
+
+            let host = challenge.protectionSpace.host
+            Task { @MainActor in
+                if self.store?.sslExceptions.contains(host) == true {
+                    completionHandler(.useCredential, URLCredential(trust: serverTrust))
+                } else {
+                    completionHandler(.performDefaultHandling, nil)
+                }
             }
         }
 
@@ -200,10 +228,44 @@ struct BrowserWebView: NSViewRepresentable {
             }
         }
 
+        // MARK: - WKUIDelegate: Media Permissions
+
+        func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin, initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType, decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+            let permissionName: String = switch type {
+            case .camera: "camera"
+            case .microphone: "microphone"
+            case .cameraAndMicrophone: "camera and microphone"
+            @unknown default: "media"
+            }
+
+            let alert = NSAlert()
+            alert.messageText = "\(origin.host) wants to use your \(permissionName)"
+            alert.informativeText = "This site is requesting access to your \(permissionName)."
+            alert.addButton(withTitle: "Allow")
+            alert.addButton(withTitle: "Deny")
+            alert.alertStyle = .informational
+
+            if let window = webView.window {
+                alert.beginSheetModal(for: window) { response in
+                    decisionHandler(response == .alertFirstButtonReturn ? .grant : .deny)
+                }
+            } else {
+                let response = alert.runModal()
+                decisionHandler(response == .alertFirstButtonReturn ? .grant : .deny)
+            }
+        }
+
         // MARK: - WKUIDelegate: New Window (window.open, target=_blank)
 
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-            // Open target=_blank and window.open links in a new tab
+            let blockPopups = UserDefaults.standard.bool(forKey: "blockPopups")
+
+            // If pop-ups are blocked and this wasn't user-initiated, ignore
+            if blockPopups && !navigationAction.sourceFrame.isMainFrame && navigationAction.navigationType != .linkActivated {
+                return nil
+            }
+
+            // Open as new tab
             if let url = navigationAction.request.url {
                 Task { @MainActor in
                     VelaAnimation.withEmphasis {

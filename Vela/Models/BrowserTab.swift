@@ -12,6 +12,8 @@ struct BrowserTab: Identifiable, Codable, Equatable {
     var zoomLevel: Double
     var isPlayingAudio: Bool
     var isMuted: Bool
+    var errorDescription: String?
+    var errorCode: Int?
     var lastAccessedAt: Date
 
     init(

@@ -34,7 +34,13 @@ struct BrowserSurfaceView: View {
 
             Divider()
 
-            if let tabID = store.activeTabID, store.activeTab?.url != nil {
+            if let tab = store.activeTab, let errorDesc = tab.errorDescription, let errorCode = tab.errorCode {
+                ErrorPageView(
+                    errorDescription: errorDesc,
+                    errorCode: errorCode,
+                    host: tab.url?.host()
+                )
+            } else if let tabID = store.activeTabID, store.activeTab?.url != nil {
                 BrowserWebView(tabID: tabID)
                     .id(tabID)
             } else {

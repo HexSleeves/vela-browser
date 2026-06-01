@@ -10,6 +10,7 @@ struct VelaApp: App {
                 .environment(store)
                 .frame(minWidth: 960, minHeight: 640)
         }
+        .defaultSize(width: 1200, height: 800)
         .commands {
             BrowserCommands()
         }

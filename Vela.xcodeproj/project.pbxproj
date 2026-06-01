@@ -38,6 +38,7 @@
 		D8301EE2359B0C22BDF94D7B /* HistoryEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAEC7C117FD753661EC94DCF /* HistoryEntry.swift */; };
 		E46D3BE87472E68171DA233C /* BrowserStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A5E772491295CED935B8CC /* BrowserStore.swift */; };
 		E96A9742279D23CCA59ACDA0 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 493FB4BF39945A547F158C46 /* SettingsView.swift */; };
+		F02BC19DC6C702647CC2BE4F /* ErrorPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B3F17AEC2B5E01E87C0D84 /* ErrorPageView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,6 +72,7 @@
 		789862BF13686674B5EB72A3 /* VelaApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VelaApp.swift; sourceTree = "<group>"; };
 		8BF30FA7B779EBE5552E5014 /* DownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadManager.swift; sourceTree = "<group>"; };
 		8E30714DD71B37E521CB2525 /* BrowserSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserSurfaceView.swift; sourceTree = "<group>"; };
+		92B3F17AEC2B5E01E87C0D84 /* ErrorPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorPageView.swift; sourceTree = "<group>"; };
 		9AA7233B6C98BC9D5E70C21B /* BrowserPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserPersistence.swift; sourceTree = "<group>"; };
 		AA566F1AB1994A2BD4B8FB0F /* BrowserTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserTab.swift; sourceTree = "<group>"; };
 		AAEC7C117FD753661EC94DCF /* HistoryEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryEntry.swift; sourceTree = "<group>"; };
@@ -150,6 +152,7 @@
 				8E30714DD71B37E521CB2525 /* BrowserSurfaceView.swift */,
 				23F5AEC7382F4750D350736B /* CommandBarView.swift */,
 				3EB0D6D49CAE8493A2816CD5 /* DownloadsView.swift */,
+				92B3F17AEC2B5E01E87C0D84 /* ErrorPageView.swift */,
 				69002946774198BCA3F17FB3 /* FindBarView.swift */,
 				F844CA695D8738D581324565 /* MainBrowserWindow.swift */,
 				CDE4E5F4809104C86E7310A6 /* NewTabPageView.swift */,
@@ -314,6 +317,7 @@
 				622101C23DAA73DCB0C6880B /* DownloadItem.swift in Sources */,
 				C3102F4EC4BCBDFFC5B11E69 /* DownloadManager.swift in Sources */,
 				2370B6EF644B8134A971532B /* DownloadsView.swift in Sources */,
+				F02BC19DC6C702647CC2BE4F /* ErrorPageView.swift in Sources */,
 				A9F5A797941D7D2EF827B7DF /* FindBarView.swift in Sources */,
 				D8301EE2359B0C22BDF94D7B /* HistoryEntry.swift in Sources */,
 				22D340FD06529AD55D09DBFF /* MainBrowserWindow.swift in Sources */,

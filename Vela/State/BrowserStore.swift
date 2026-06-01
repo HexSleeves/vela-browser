@@ -18,6 +18,7 @@ final class BrowserStore {
     var bookmarks: [Bookmark] = []
     var recentlyClosed: [ClosedTab] = []
     var history: [HistoryEntry] = []
+    var sslExceptions: Set<String> = [] // Hosts the user chose "proceed anyway" for
 
     struct ClosedTab {
         let title: String
@@ -358,6 +359,26 @@ final class BrowserStore {
     func findPrevious() {
         guard let tabID = activeTabID else { return }
         webViewPool.findPrevious(tabID: tabID)
+    }
+
+    // MARK: - Error Handling
+
+    func setTabError(_ tabID: BrowserTab.ID, description: String, code: Int) {
+        tabs[tabID]?.errorDescription = description
+        tabs[tabID]?.errorCode = code
+    }
+
+    func clearTabError(_ tabID: BrowserTab.ID) {
+        tabs[tabID]?.errorDescription = nil
+        tabs[tabID]?.errorCode = nil
+    }
+
+    func proceedDespiteSSL(host: String) {
+        sslExceptions.insert(host)
+        if let tabID = activeTabID {
+            clearTabError(tabID)
+            reload()
+        }
     }
 
     // MARK: - Bookmarks
