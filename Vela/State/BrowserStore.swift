@@ -12,15 +12,26 @@ final class BrowserStore {
     var isSidebarCollapsed = false
     var isFindBarVisible = false
     var findText = ""
+    var isCommandBarVisible = false
+    var isDownloadsVisible = false
+    var downloads: [DownloadItem] = []
+    var bookmarks: [Bookmark] = []
+    var history: [HistoryEntry] = []
+
+    private static let maxHistoryEntries = 500
 
     let webViewPool: WebViewPooling
+    let downloadManager: DownloadManager
     private let persistence: BrowserPersistence
     private let navigationService: NavigationService
 
     static func bootstrap() -> BrowserStore {
         let persistence = BrowserPersistence()
         if let snapshot = try? persistence.load() {
-            return BrowserStore(snapshot: snapshot, persistence: persistence)
+            let store = BrowserStore(snapshot: snapshot, persistence: persistence)
+            store.loadHistory()
+            store.loadBookmarks()
+            return store
         }
 
         let theme = BrowserTheme.builtIns[0]
@@ -52,6 +63,8 @@ final class BrowserStore {
         self.persistence = persistence
         self.navigationService = navigationService
         self.webViewPool = webViewPool
+        self.downloadManager = DownloadManager()
+        self.downloadManager.store = self
     }
 
     var activeWorkspace: Workspace? {
@@ -134,6 +147,47 @@ final class BrowserStore {
         }
 
         workspaces[index].themeID = themeID
+        persist()
+    }
+
+    // MARK: - Workspace CRUD
+
+    func createWorkspace(name: String) {
+        // Assign the next theme that isn't already in use, cycling through builtIns
+        let usedThemeIDs = Set(workspaces.map(\.themeID))
+        let availableTheme = themes.first(where: { !usedThemeIDs.contains($0.id) }) ?? themes[0]
+        let workspace = Workspace(name: name, themeID: availableTheme.id)
+        workspaces.append(workspace)
+        activeWorkspaceID = workspace.id
+        activeTabID = nil
+        persist()
+    }
+
+    func renameWorkspace(_ workspaceID: Workspace.ID, name: String) {
+        guard let index = workspaces.firstIndex(where: { $0.id == workspaceID }) else { return }
+        workspaces[index].name = name
+        persist()
+    }
+
+    func deleteWorkspace(_ workspaceID: Workspace.ID) {
+        guard workspaces.count > 1 else { return } // Can't delete last workspace
+        guard let index = workspaces.firstIndex(where: { $0.id == workspaceID }) else { return }
+
+        // Remove all tabs belonging to this workspace
+        let tabIDs = workspaces[index].tabIDs
+        for tabID in tabIDs {
+            tabs.removeValue(forKey: tabID)
+            webViewPool.remove(tabID: tabID)
+        }
+
+        workspaces.remove(at: index)
+
+        // If we deleted the active workspace, switch to another
+        if activeWorkspaceID == workspaceID {
+            activeWorkspaceID = workspaces[0].id
+            activeTabID = workspaces[0].tabIDs.first
+        }
+
         persist()
     }
 
@@ -280,6 +334,59 @@ final class BrowserStore {
         webViewPool.findPrevious(tabID: tabID)
     }
 
+    // MARK: - Bookmarks
+
+    func isBookmarked(_ url: URL) -> Bool {
+        bookmarks.contains { $0.url == url }
+    }
+
+    func toggleBookmark() {
+        guard let tab = activeTab, let url = tab.url else { return }
+        if let index = bookmarks.firstIndex(where: { $0.url == url }) {
+            bookmarks.remove(at: index)
+        } else {
+            let bookmark = Bookmark(title: tab.title, url: url)
+            bookmarks.insert(bookmark, at: 0)
+        }
+        persistBookmarks()
+    }
+
+    func removeBookmark(_ id: Bookmark.ID) {
+        bookmarks.removeAll { $0.id == id }
+        persistBookmarks()
+    }
+
+    private func persistBookmarks() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let bookmarksURL = directory.appending(path: "bookmarks.json")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let data = try? JSONEncoder().encode(bookmarks)
+        try? data?.write(to: bookmarksURL, options: [.atomic])
+    }
+
+    func loadBookmarks() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let bookmarksURL = directory.appending(path: "bookmarks.json")
+        guard let data = try? Data(contentsOf: bookmarksURL),
+              let entries = try? JSONDecoder().decode([Bookmark].self, from: data) else { return }
+        bookmarks = entries
+    }
+
+    // MARK: - Audio
+
+    func toggleMute(_ tabID: BrowserTab.ID) {
+        guard var tab = tabs[tabID] else { return }
+        tab.isMuted.toggle()
+        tabs[tabID] = tab
+        webViewPool.setMuted(tab.isMuted, tabID: tabID)
+    }
+
+    func updateAudioState(_ tabID: BrowserTab.ID, isPlaying: Bool) {
+        tabs[tabID]?.isPlayingAudio = isPlaying
+    }
+
     // MARK: - Print
 
     func printPage() {
@@ -317,6 +424,8 @@ final class BrowserStore {
             return
         }
 
+        let wasLoading = tab.isLoading
+
         if let title, !title.isEmpty {
             tab.title = title
         }
@@ -326,7 +435,49 @@ final class BrowserStore {
             tab.estimatedProgress = estimatedProgress
         }
         tabs[tabID] = tab
+
+        // Record history when page finishes loading
+        if wasLoading && !isLoading, let pageURL = tab.url {
+            recordHistory(title: tab.title, url: pageURL)
+        }
+
         persist()
+    }
+
+    private func recordHistory(title: String, url: URL) {
+        // Skip about: pages and duplicates within 2 seconds
+        guard url.scheme == "http" || url.scheme == "https" else { return }
+        if let last = history.first, last.url == url,
+           Date().timeIntervalSince(last.visitedAt) < 2 { return }
+
+        let entry = HistoryEntry(title: title, url: url)
+        history.insert(entry, at: 0)
+
+        // Cap history size
+        if history.count > Self.maxHistoryEntries {
+            history = Array(history.prefix(Self.maxHistoryEntries))
+        }
+
+        persistHistory()
+    }
+
+    private func persistHistory() {
+        // History saved alongside browser state
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let historyURL = directory.appending(path: "history.json")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let data = try? JSONEncoder().encode(history)
+        try? data?.write(to: historyURL, options: [.atomic])
+    }
+
+    func loadHistory() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let historyURL = directory.appending(path: "history.json")
+        guard let data = try? Data(contentsOf: historyURL),
+              let entries = try? JSONDecoder().decode([HistoryEntry].self, from: data) else { return }
+        history = entries
     }
 
     private func persist() {

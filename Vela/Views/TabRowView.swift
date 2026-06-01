@@ -32,6 +32,19 @@ struct TabRowView: View {
                 if tab.isLoading {
                     ProgressView()
                         .controlSize(.small)
+                } else if tab.isPlayingAudio || tab.isMuted {
+                    Button {
+                        VelaAnimation.withMicro {
+                            store.toggleMute(tab.id)
+                        }
+                    } label: {
+                        Image(systemName: tab.isMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                            .font(.caption2)
+                            .foregroundStyle(tab.isMuted ? .secondary : .primary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(tab.isMuted ? "Unmute Tab" : "Mute Tab")
+                    .transition(.opacity)
                 }
 
                 Button {

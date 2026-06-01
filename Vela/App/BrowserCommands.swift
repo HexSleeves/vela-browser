@@ -52,6 +52,11 @@ struct BrowserCommands: Commands {
             }
             .keyboardShortcut("l", modifiers: .command)
 
+            Button("Command Bar") {
+                commandSink?(.toggleCommandBar)
+            }
+            .keyboardShortcut("k", modifiers: .command)
+
             Divider()
 
             Button("Find…") {
@@ -127,6 +132,7 @@ enum BrowserCommand {
     case findNext
     case findPrevious
     case printPage
+    case toggleCommandBar
 }
 
 private struct BrowserCommandSinkKey: FocusedValueKey {

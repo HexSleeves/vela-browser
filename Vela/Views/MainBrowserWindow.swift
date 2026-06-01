@@ -17,6 +17,13 @@ struct MainBrowserWindow: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(.regularMaterial)
+        .overlay {
+            if store.isCommandBarVisible {
+                CommandBarOverlay()
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+            }
+        }
+        .animation(VelaAnimation.emphasis, value: store.isCommandBarVisible)
         .focusedValue(\.browserCommandSink) { command in
             handle(command)
         }
@@ -82,6 +89,11 @@ struct MainBrowserWindow: View {
 
         case .printPage:
             store.printPage()
+
+        case .toggleCommandBar:
+            VelaAnimation.withEmphasis {
+                store.isCommandBarVisible.toggle()
+            }
         }
     }
 }

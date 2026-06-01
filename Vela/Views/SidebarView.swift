@@ -42,10 +42,26 @@ struct SidebarView: View {
     private var spaceHeader: some View {
         VStack(alignment: .leading, spacing: 8) {
             if !store.isSidebarCollapsed {
-                Text("Vela")
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.primary)
-                    .transition(.opacity)
+                HStack {
+                    Text("Vela")
+                        .font(.title3.weight(.semibold))
+                        .foregroundStyle(.primary)
+
+                    Spacer()
+
+                    Button {
+                        VelaAnimation.withEmphasis {
+                            store.createWorkspace(name: "Space \(store.workspaces.count + 1)")
+                        }
+                    } label: {
+                        Image(systemName: "plus.circle")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .help("New Workspace")
+                }
+                .transition(.opacity)
             }
 
             ForEach(Array(store.workspaces.enumerated()), id: \.element.id) { index, workspace in
@@ -74,7 +90,34 @@ struct SidebarView: View {
                     .background(workspace.id == store.activeWorkspaceID ? Color.primary.opacity(0.08) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
                 }
                 .buttonStyle(.plain)
+                .contextMenu {
+                    Button("Rename…") {
+                        let alert = NSAlert()
+                        alert.messageText = "Rename Workspace"
+                        alert.informativeText = "Enter a new name:"
+                        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+                        field.stringValue = workspace.name
+                        alert.accessoryView = field
+                        alert.addButton(withTitle: "Rename")
+                        alert.addButton(withTitle: "Cancel")
+                        if alert.runModal() == .alertFirstButtonReturn {
+                            let newName = field.stringValue.trimmingCharacters(in: .whitespaces)
+                            if !newName.isEmpty {
+                                store.renameWorkspace(workspace.id, name: newName)
+                            }
+                        }
+                    }
+
+                    if store.workspaces.count > 1 {
+                        Button("Delete Workspace", role: .destructive) {
+                            VelaAnimation.withEmphasis {
+                                store.deleteWorkspace(workspace.id)
+                            }
+                        }
+                    }
+                }
             }
+            .animation(VelaAnimation.emphasis, value: store.workspaces.map(\.id))
         }
     }
 
@@ -121,6 +164,20 @@ struct SidebarView: View {
 
             if !store.isSidebarCollapsed {
                 Spacer()
+
+                Button {
+                    store.isDownloadsVisible.toggle()
+                } label: {
+                    Image(systemName: "arrow.down.circle")
+                        .frame(width: 24, height: 24)
+                }
+                .help("Downloads")
+                .popover(isPresented: Binding(
+                    get: { store.isDownloadsVisible },
+                    set: { store.isDownloadsVisible = $0 }
+                )) {
+                    DownloadsView()
+                }
             }
         }
         .buttonStyle(.borderless)

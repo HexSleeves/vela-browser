@@ -16,10 +16,12 @@ struct BrowserSurfaceView: View {
                 canGoForward: store.activeTab?.canGoForward ?? false,
                 isSecure: store.activeTab?.url?.scheme == "https",
                 accentColor: store.activeTheme.accent.color,
+                isBookmarked: store.activeTab?.url.flatMap { store.isBookmarked($0) } ?? false,
                 onSubmit: { store.loadAddressInput(addressText) },
                 onBack: { store.goBack() },
                 onForward: { store.goForward() },
-                onReload: { store.reload() }
+                onReload: { store.reload() },
+                onToggleBookmark: { store.toggleBookmark() }
             )
             .focused(isAddressFocused)
             .padding(10)
@@ -32,24 +34,15 @@ struct BrowserSurfaceView: View {
 
             Divider()
 
-            if let tabID = store.activeTabID {
+            if let tabID = store.activeTabID, store.activeTab?.url != nil {
                 BrowserWebView(tabID: tabID)
                     .id(tabID)
             } else {
-                emptyState
+                NewTabPageView()
             }
         }
         .onChange(of: store.activeTabID) {
             addressText = store.activeTab?.url?.absoluteString ?? ""
         }
-    }
-
-    private var emptyState: some View {
-        ContentUnavailableView(
-            "No Tab Open",
-            systemImage: "safari",
-            description: Text("Create a tab to start browsing.")
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

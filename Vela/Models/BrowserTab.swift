@@ -10,6 +10,8 @@ struct BrowserTab: Identifiable, Codable, Equatable {
     var canGoBack: Bool
     var canGoForward: Bool
     var zoomLevel: Double
+    var isPlayingAudio: Bool
+    var isMuted: Bool
     var lastAccessedAt: Date
 
     init(
@@ -22,6 +24,8 @@ struct BrowserTab: Identifiable, Codable, Equatable {
         canGoBack: Bool = false,
         canGoForward: Bool = false,
         zoomLevel: Double = 1.0,
+        isPlayingAudio: Bool = false,
+        isMuted: Bool = false,
         lastAccessedAt: Date = Date()
     ) {
         self.id = id
@@ -33,6 +37,8 @@ struct BrowserTab: Identifiable, Codable, Equatable {
         self.canGoBack = canGoBack
         self.canGoForward = canGoForward
         self.zoomLevel = zoomLevel
+        self.isPlayingAudio = isPlayingAudio
+        self.isMuted = isMuted
         self.lastAccessedAt = lastAccessedAt
     }
 }

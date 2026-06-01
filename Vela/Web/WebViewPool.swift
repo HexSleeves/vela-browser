@@ -15,6 +15,7 @@ protocol WebViewPooling: AnyObject {
     func findPrevious(tabID: BrowserTab.ID)
     func clearFind(tabID: BrowserTab.ID)
     func printPage(tabID: BrowserTab.ID)
+    func setMuted(_ muted: Bool, tabID: BrowserTab.ID)
 }
 
 @MainActor
@@ -85,6 +86,11 @@ final class WebViewPool: WebViewPooling {
     func clearFind(tabID: BrowserTab.ID) {
         guard let webView = webViews[tabID] else { return }
         webView.evaluateJavaScript("window.getSelection()?.removeAllRanges()") { _, _ in }
+    }
+
+    func setMuted(_ muted: Bool, tabID: BrowserTab.ID) {
+        guard let webView = webViews[tabID] else { return }
+        webView.setAllMediaPlaybackSuspended(muted)
     }
 
     func printPage(tabID: BrowserTab.ID) {

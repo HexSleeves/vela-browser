@@ -120,6 +120,28 @@ struct BrowserWebView: NSViewRepresentable {
             }
         }
 
+        // MARK: - WKNavigationDelegate: Downloads
+
+        func webView(_ webView: WKWebView, decidePolicyFor navigationResponse: WKNavigationResponse) async -> WKNavigationResponsePolicy {
+            // If the response isn't something WebKit can show, download it
+            if !navigationResponse.canShowMIMEType {
+                return .download
+            }
+            return .allow
+        }
+
+        func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
+            Task { @MainActor in
+                store?.downloadManager.startDownload(download)
+            }
+        }
+
+        func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
+            Task { @MainActor in
+                store?.downloadManager.startDownload(download)
+            }
+        }
+
         // MARK: - WKUIDelegate: JS Dialogs
 
         func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {

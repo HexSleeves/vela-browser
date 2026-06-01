@@ -9,10 +9,12 @@ struct AddressBar: View {
     var canGoForward: Bool = false
     var isSecure: Bool = false
     var accentColor: Color = .accentColor
+    var isBookmarked: Bool = false
     var onSubmit: () -> Void
     var onBack: () -> Void = {}
     var onForward: () -> Void = {}
     var onReload: () -> Void = {}
+    var onToggleBookmark: () -> Void = {}
 
     @State private var submitTrigger = false
 
@@ -33,6 +35,19 @@ struct AddressBar: View {
                     submitTrigger.toggle()
                     onSubmit()
                 }
+
+            // Bookmark toggle
+            Button {
+                onToggleBookmark()
+            } label: {
+                Image(systemName: isBookmarked ? "star.fill" : "star")
+                    .font(.caption)
+                    .foregroundStyle(isBookmarked ? .yellow : .secondary)
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.plain)
+            .help(isBookmarked ? "Remove Bookmark" : "Add Bookmark")
+            .animation(VelaAnimation.micro, value: isBookmarked)
 
             // Reload / Stop button
             Button {

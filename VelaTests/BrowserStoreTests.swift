@@ -96,6 +96,43 @@ struct BrowserStoreTests {
         #expect(reorderedIDs[2] == originalIDs[1])
     }
 
+    @Test("createWorkspace adds a new workspace and switches to it")
+    func createWorkspaceAddsAndSwitches() {
+        let store = makeStore()
+        let originalID = store.activeWorkspaceID
+
+        store.createWorkspace(name: "Work")
+
+        #expect(store.workspaces.count == 2)
+        #expect(store.activeWorkspaceID != originalID)
+        #expect(store.workspaces.last?.name == "Work")
+    }
+
+    @Test("deleteWorkspace removes workspace and its tabs")
+    func deleteWorkspaceRemovesTabs() throws {
+        let store = makeStore()
+        store.createWorkspace(name: "Work")
+        let workID = store.activeWorkspaceID
+        store.createTab(url: try #require(URL(string: "https://work.com")))
+        let tabID = try #require(store.activeTabID)
+
+        store.deleteWorkspace(workID)
+
+        #expect(store.workspaces.count == 1)
+        #expect(store.tabs[tabID] == nil)
+    }
+
+    @Test("deleteWorkspace guards against deleting last workspace")
+    func deleteLastWorkspaceGuard() {
+        let store = makeStore()
+        let onlyID = store.activeWorkspaceID
+
+        store.deleteWorkspace(onlyID)
+
+        #expect(store.workspaces.count == 1)
+        #expect(store.activeWorkspaceID == onlyID)
+    }
+
     @Test("moveTab with same from and to index is a no-op")
     func moveTabSameIndexNoOp() throws {
         let store = makeStore()
@@ -152,4 +189,5 @@ private final class StubWebViewPool: WebViewPooling {
     func findPrevious(tabID: BrowserTab.ID) {}
     func clearFind(tabID: BrowserTab.ID) {}
     func printPage(tabID: BrowserTab.ID) {}
+    func setMuted(_ muted: Bool, tabID: BrowserTab.ID) {}
 }
