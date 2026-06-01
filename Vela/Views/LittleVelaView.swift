@@ -20,14 +20,14 @@ struct LittleVelaView: View {
                         .font(.caption)
                 }
                 .buttonStyle(.plain)
-                .disabled(!(store.tabs[littleTabID ?? UUID()]?.canGoBack ?? false))
+                .disabled(!(littleTabID.flatMap { store.tabs[$0]?.canGoBack } ?? false))
 
                 Button { goForward() } label: {
                     Image(systemName: "chevron.right")
                         .font(.caption)
                 }
                 .buttonStyle(.plain)
-                .disabled(!(store.tabs[littleTabID ?? UUID()]?.canGoForward ?? false))
+                .disabled(!(littleTabID.flatMap { store.tabs[$0]?.canGoForward } ?? false))
 
                 // URL field
                 TextField("Search or enter URL…", text: $urlText)
@@ -42,7 +42,10 @@ struct LittleVelaView: View {
                     .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
 
                 // Close
-                Button { dismiss() } label: {
+                Button {
+                    cleanupLittleTab()
+                    dismiss()
+                } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -74,6 +77,9 @@ struct LittleVelaView: View {
         .onAppear {
             isFocused = true
         }
+        .onDisappear {
+            cleanupLittleTab()
+        }
         .onChange(of: littleTabID) { _, newID in
             if let id = newID, let url = store.tabs[id]?.url {
                 urlText = url.absoluteString
@@ -85,29 +91,21 @@ struct LittleVelaView: View {
         guard !urlText.isEmpty else { return }
 
         if littleTabID == nil {
-            // Create a standalone tab for the little window
-            let tab = BrowserTab(url: nil)
-            store.tabs[tab.id] = tab
-            littleTabID = tab.id
+            littleTabID = store.createTransientTab(kind: .littleVela)
         }
 
         guard let tabID = littleTabID else { return }
-
-        // Resolve the input to a URL using the same logic as address bar
-        let trimmed = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let url: URL
-        if let parsed = URL(string: trimmed), parsed.scheme != nil {
-            url = parsed
-        } else if trimmed.contains(".") && !trimmed.contains(" ") {
-            url = URL(string: "https://\(trimmed)") ?? URL(string: "https://google.com/search?q=\(trimmed)")!
-        } else {
-            url = URL(string: "https://google.com/search?q=\(trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed)")!
-        }
+        let url = store.destination(for: urlText)
 
         store.tabs[tabID]?.url = url
-        store.tabs[tabID]?.title = url.host() ?? trimmed
+        store.tabs[tabID]?.title = url.host() ?? url.absoluteString
         store.webViewPool.load(url, in: tabID)
         urlText = url.absoluteString
+    }
+
+    private func cleanupLittleTab() {
+        store.discardTransientTab(littleTabID)
+        littleTabID = nil
     }
 
     private func goBack() {

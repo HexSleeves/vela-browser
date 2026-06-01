@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct MainBrowserWindow: View {
     @Environment(BrowserStore.self) private var store
@@ -169,6 +170,32 @@ struct MainBrowserWindow: View {
 
         case .openPrivateWindow:
             openWindow(id: "private-window")
+
+        case .importBookmarks:
+            importBookmarks()
+        }
+    }
+
+    private func importBookmarks() {
+        let panel = NSOpenPanel()
+        panel.title = "Import Bookmarks"
+        panel.allowedContentTypes = [.html, .text]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let count = try store.importBookmarks(from: url)
+            let alert = NSAlert()
+            alert.messageText = "Bookmarks Imported"
+            alert.informativeText = count == 0 ? "No new bookmarks were found." : "Imported \(count) new bookmark\(count == 1 ? "" : "s")."
+            alert.addButton(withTitle: "OK")
+            alert.runModal()
+        } catch {
+            let alert = NSAlert(error: error)
+            alert.messageText = "Import Failed"
+            alert.runModal()
         }
     }
 }

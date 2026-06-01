@@ -24,6 +24,17 @@ final class BrowserStore {
     var splitTabID: BrowserTab.ID? // Second tab in split view
     var boosts: [Boost] = []
     var tabGroups: [TabGroup] = []
+    var swipeIndicator: [BrowserTab.ID: SwipeDirection] = [:]
+
+    enum TransientTabKind {
+        case littleVela
+        case privateBrowsing
+    }
+
+    enum SwipeDirection {
+        case back
+        case forward
+    }
 
     struct ClosedTab {
         let title: String
@@ -35,6 +46,8 @@ final class BrowserStore {
     private static let maxRecentlyClosed = 10
 
     private static let maxHistoryEntries = 500
+
+    private var transientTabs: [BrowserTab.ID: TransientTabKind] = [:]
 
     let webViewPool: WebViewPooling
     let downloadManager: DownloadManager
@@ -87,6 +100,7 @@ final class BrowserStore {
         if let pool = webViewPool as? WebViewPool {
             pool.store = self
         }
+        removeOrphanedPersistedTabs()
     }
 
     var activeWorkspace: Workspace? {
@@ -103,6 +117,59 @@ final class BrowserStore {
             return BrowserTheme.builtIns[0]
         }
         return theme
+    }
+
+    func createTransientTab(kind: TransientTabKind) -> BrowserTab.ID {
+        let tab = BrowserTab(url: nil)
+        tabs[tab.id] = tab
+        transientTabs[tab.id] = kind
+        return tab.id
+    }
+
+    func discardTransientTab(_ tabID: BrowserTab.ID?) {
+        guard let tabID else { return }
+        transientTabs.removeValue(forKey: tabID)
+        tabs.removeValue(forKey: tabID)
+        webViewPool.remove(tabID: tabID)
+        swipeIndicator.removeValue(forKey: tabID)
+        if splitTabID == tabID {
+            splitTabID = nil
+        }
+        if activeTabID == tabID {
+            activeTabID = activeWorkspace?.tabIDs.first
+        }
+        persist()
+    }
+
+    func isTransientTab(_ tabID: BrowserTab.ID) -> Bool {
+        transientTabs[tabID] != nil
+    }
+
+    func isPrivateTab(_ tabID: BrowserTab.ID) -> Bool {
+        transientTabs[tabID] == .privateBrowsing
+    }
+
+    func showSwipeIndicator(_ direction: SwipeDirection, for tabID: BrowserTab.ID) {
+        swipeIndicator[tabID] = direction
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(650))
+            if swipeIndicator[tabID] == direction {
+                swipeIndicator.removeValue(forKey: tabID)
+            }
+        }
+    }
+
+    private func removeOrphanedPersistedTabs() {
+        let workspaceTabIDs = Set(workspaces.flatMap { $0.tabIDs + $0.archivedTabIDs })
+        tabs = tabs.filter { workspaceTabIDs.contains($0.key) }
+        tabGroups = tabGroups.map { group in
+            var sanitized = group
+            sanitized.tabIDs = group.tabIDs.filter { workspaceTabIDs.contains($0) }
+            return sanitized
+        }
+        if let activeTabID, !workspaceTabIDs.contains(activeTabID) {
+            self.activeTabID = activeWorkspace?.tabIDs.first
+        }
     }
 
     func createTab(in workspaceID: Workspace.ID? = nil, url: URL? = nil, pinned: Bool = false) {
@@ -129,6 +196,11 @@ final class BrowserStore {
     }
 
     func closeTab(_ tabID: BrowserTab.ID) {
+        if isTransientTab(tabID) {
+            discardTransientTab(tabID)
+            return
+        }
+
         // Save to recently closed before removing
         if let tab = tabs[tabID] {
             let wsID = workspaces.first(where: { $0.tabIDs.contains(tabID) })?.id ?? activeWorkspaceID
@@ -236,6 +308,45 @@ final class BrowserStore {
 
         activeWorkspaceID = workspaceID
         activeTabID = workspace.tabIDs.first
+        persist()
+    }
+
+    func moveTab(_ tabID: BrowserTab.ID, toSectionIndex targetIndex: Int, sectionTabIDs: [BrowserTab.ID]) {
+        guard sectionTabIDs.contains(tabID),
+              targetIndex >= 0,
+              targetIndex < sectionTabIDs.count else { return }
+
+        var reorderedSection = sectionTabIDs
+        guard let currentIndex = reorderedSection.firstIndex(of: tabID), currentIndex != targetIndex else { return }
+        reorderedSection.remove(at: currentIndex)
+        reorderedSection.insert(tabID, at: targetIndex)
+
+        if let wsIndex = workspaces.firstIndex(where: { $0.tabIDs.contains(tabID) }) {
+            let originalIDs = workspaces[wsIndex].tabIDs
+            let sectionSet = Set(sectionTabIDs)
+            var replacementIndex = 0
+            workspaces[wsIndex].tabIDs = originalIDs.map { id in
+                guard sectionSet.contains(id), replacementIndex < reorderedSection.count else { return id }
+                defer { replacementIndex += 1 }
+                return reorderedSection[replacementIndex]
+            }
+        }
+
+        if let groupIndex = tabGroups.firstIndex(where: { $0.tabIDs.contains(tabID) }) {
+            let originalIDs = tabGroups[groupIndex].tabIDs
+            let sectionSet = Set(sectionTabIDs)
+            guard sectionSet.isSubset(of: Set(originalIDs)) else {
+                persist()
+                return
+            }
+            var replacementIndex = 0
+            tabGroups[groupIndex].tabIDs = originalIDs.map { id in
+                guard sectionSet.contains(id), replacementIndex < reorderedSection.count else { return id }
+                defer { replacementIndex += 1 }
+                return reorderedSection[replacementIndex]
+            }
+        }
+
         persist()
     }
 
@@ -553,6 +664,28 @@ final class BrowserStore {
         persistBookmarks()
     }
 
+    @discardableResult
+    func importBookmarks(from fileURL: URL) throws -> Int {
+        let imported = try BookmarkImportService().importBookmarks(from: fileURL)
+        var seenURLs = Set(bookmarks.map { normalizedBookmarkURL($0.url) })
+        let newBookmarks = imported.filter { bookmark in
+            let normalized = normalizedBookmarkURL(bookmark.url)
+            guard !seenURLs.contains(normalized) else { return false }
+            seenURLs.insert(normalized)
+            return true
+        }
+        guard !newBookmarks.isEmpty else { return 0 }
+        bookmarks.insert(contentsOf: newBookmarks, at: 0)
+        persistBookmarks()
+        return newBookmarks.count
+    }
+
+    private func normalizedBookmarkURL(_ url: URL) -> String {
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        components?.fragment = nil
+        return (components?.url ?? url).absoluteString.lowercased()
+    }
+
     private func persistBookmarks() {
         let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appending(path: "Vela", directoryHint: .isDirectory)
@@ -600,6 +733,89 @@ final class BrowserStore {
         webViewPool.printPage(tabID: tabID)
     }
 
+    func destination(for input: String) -> URL {
+        navigationService.destination(for: input)
+    }
+
+    func autocompleteSuggestions(for input: String, limit: Int = 6) -> [AutocompleteSuggestion] {
+        let query = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return [] }
+        let lowered = query.lowercased()
+        var results: [AutocompleteSuggestion] = []
+
+        let matchingTabs = tabs.values
+            .filter { !isTransientTab($0.id) }
+            .filter { tab in
+                tab.title.lowercased().contains(lowered) ||
+                (tab.url?.absoluteString.lowercased().contains(lowered) ?? false)
+            }
+            .sorted { $0.lastAccessedAt > $1.lastAccessedAt }
+            .prefix(3)
+
+        results.append(contentsOf: matchingTabs.map { tab in
+            AutocompleteSuggestion(
+                kind: .tab,
+                title: tab.title,
+                subtitle: tab.url?.absoluteString ?? "Open tab",
+                completionText: tab.url?.absoluteString ?? tab.title,
+                url: tab.url,
+                tabID: tab.id
+            )
+        })
+
+        let openURLs = Set(tabs.values
+            .filter { !isTransientTab($0.id) }
+            .compactMap(\.url?.absoluteString))
+        results.append(contentsOf: bookmarks
+            .filter { bookmark in
+                !openURLs.contains(bookmark.url.absoluteString) &&
+                (bookmark.title.lowercased().contains(lowered) || bookmark.url.absoluteString.lowercased().contains(lowered))
+            }
+            .prefix(3)
+            .map { bookmark in
+                AutocompleteSuggestion(
+                    kind: .bookmark,
+                    title: bookmark.title,
+                    subtitle: bookmark.url.absoluteString,
+                    completionText: bookmark.url.absoluteString,
+                    url: bookmark.url
+                )
+            })
+
+        results.append(contentsOf: history
+            .filter { entry in
+                !openURLs.contains(entry.url.absoluteString) &&
+                (entry.title.lowercased().contains(lowered) || entry.url.absoluteString.lowercased().contains(lowered))
+            }
+            .prefix(3)
+            .map { entry in
+                AutocompleteSuggestion(
+                    kind: .history,
+                    title: entry.title,
+                    subtitle: entry.url.absoluteString,
+                    completionText: entry.url.absoluteString,
+                    url: entry.url
+                )
+            })
+
+        let destination = navigationService.destination(for: query)
+        let directKind: AutocompleteSuggestion.Kind = destination.host()?.localizedCaseInsensitiveContains(query) == true ? .url : .search
+        results.append(AutocompleteSuggestion(
+            kind: directKind,
+            title: directKind == .search ? "Search for “\(query)”" : destination.absoluteString,
+            subtitle: directKind == .search ? destination.host() ?? "Search" : "Open URL",
+            completionText: destination.absoluteString,
+            url: destination
+        ))
+
+        var seen = Set<String>()
+        return results.filter { suggestion in
+            guard !seen.contains(suggestion.completionText) else { return false }
+            seen.insert(suggestion.completionText)
+            return true
+        }.prefix(limit).map { $0 }
+    }
+
     func loadAddressInput(_ input: String) {
         let destination = navigationService.destination(for: input)
 
@@ -612,7 +828,9 @@ final class BrowserStore {
         tabs[tabID]?.title = destination.host() ?? destination.absoluteString
         tabs[tabID]?.lastAccessedAt = Date()
         webViewPool.load(destination, in: tabID)
-        persist()
+        if !isTransientTab(tabID) {
+            persist()
+        }
     }
 
     func updateNavState(_ tabID: BrowserTab.ID, canGoBack: Bool?, canGoForward: Bool?) {
@@ -642,12 +860,14 @@ final class BrowserStore {
         }
         tabs[tabID] = tab
 
-        // Record history when page finishes loading
-        if wasLoading && !isLoading, let pageURL = tab.url {
+        // Record history when page finishes loading. Private browsing never writes history.
+        if !isPrivateTab(tabID), wasLoading && !isLoading, let pageURL = tab.url {
             recordHistory(title: tab.title, url: pageURL)
         }
 
-        persist()
+        if !isTransientTab(tabID) {
+            persist()
+        }
     }
 
     private func recordHistory(title: String, url: URL) {
@@ -697,14 +917,34 @@ final class BrowserStore {
     }
 
     private func persist() {
+        let transientIDs = Set(transientTabs.keys)
+        let workspaceTabIDs = Set(workspaces.flatMap { $0.tabIDs + $0.archivedTabIDs })
+        let persistentTabs = tabs.values.filter { tab in
+            workspaceTabIDs.contains(tab.id) && !transientIDs.contains(tab.id)
+        }
+        let persistentWorkspaces = workspaces.map { workspace in
+            var sanitized = workspace
+            sanitized.tabIDs = workspace.tabIDs.filter { !transientIDs.contains($0) }
+            sanitized.archivedTabIDs = workspace.archivedTabIDs.filter { !transientIDs.contains($0) }
+            return sanitized
+        }
+        let persistentGroups = tabGroups.map { group in
+            var sanitized = group
+            sanitized.tabIDs = group.tabIDs.filter { !transientIDs.contains($0) && workspaceTabIDs.contains($0) }
+            return sanitized
+        }
+        let persistentActiveTabID = activeTabID.flatMap { tabID in
+            transientIDs.contains(tabID) ? nil : tabID
+        }
+
         let snapshot = BrowserStateSnapshot(
             schemaVersion: 1,
             activeWorkspaceID: activeWorkspaceID,
-            activeTabID: activeTabID,
-            workspaces: workspaces,
-            tabs: Array(tabs.values),
+            activeTabID: persistentActiveTabID,
+            workspaces: persistentWorkspaces,
+            tabs: persistentTabs,
             themes: themes,
-            tabGroups: tabGroups
+            tabGroups: persistentGroups
         )
         try? persistence.save(snapshot)
     }

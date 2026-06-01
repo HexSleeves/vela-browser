@@ -21,6 +21,12 @@ struct BrowserCommands: Commands {
                 commandSink?(.undoCloseTab)
             }
             .keyboardShortcut("z", modifiers: .command)
+
+            Divider()
+
+            Button("Import Bookmarks…") {
+                commandSink?(.importBookmarks)
+            }
         }
 
         // MARK: - View Menu (Zoom, Sidebar)
@@ -165,6 +171,7 @@ enum BrowserCommand {
     case toggleSplit
     case openLittleVela
     case openPrivateWindow
+    case importBookmarks
 }
 
 private struct BrowserCommandSinkKey: FocusedValueKey {

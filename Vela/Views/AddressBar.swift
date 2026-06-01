@@ -12,83 +12,26 @@ struct AddressBar: View {
     var isBookmarked: Bool = false
     var isReaderMode: Bool = false
     var hasActiveBoosts: Bool = false
+    var suggestions: [AutocompleteSuggestion] = []
     var onSubmit: () -> Void
     var onBack: () -> Void = {}
     var onForward: () -> Void = {}
     var onReload: () -> Void = {}
     var onToggleBookmark: () -> Void = {}
     var onToggleReader: () -> Void = {}
+    var onSelectSuggestion: (AutocompleteSuggestion) -> Void = { _ in }
 
     @State private var submitTrigger = false
 
     var body: some View {
-        HStack(spacing: 6) {
-            // Navigation buttons
-            navigationButtons
+        VStack(spacing: 6) {
+            bar
 
-            // Security / Search icon
-            Image(systemName: isSecure ? "lock.fill" : "magnifyingglass")
-                .foregroundStyle(isSecure ? .green : .secondary)
-                .font(.caption)
-                .frame(width: 16)
-
-            TextField("Search or enter website", text: $text)
-                .textFieldStyle(.plain)
-                .onSubmit {
-                    submitTrigger.toggle()
-                    onSubmit()
-                }
-
-            // Reader mode toggle
-            Button {
-                onToggleReader()
-            } label: {
-                Image(systemName: isReaderMode ? "book.fill" : "book")
-                    .font(.caption)
-                    .foregroundStyle(isReaderMode ? Color.accentColor : .secondary)
-                    .frame(width: 16, height: 16)
+            if shouldShowSuggestions {
+                suggestionsView
+                    .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            .buttonStyle(.plain)
-            .help(isReaderMode ? "Exit Reader Mode" : "Reader Mode")
-
-            // Boost indicator
-            if hasActiveBoosts {
-                Image(systemName: "bolt.fill")
-                    .font(.caption)
-                    .foregroundStyle(.yellow)
-                    .frame(width: 16, height: 16)
-                    .help("Boosts active on this site")
-            }
-
-            // Bookmark toggle
-            Button {
-                onToggleBookmark()
-            } label: {
-                Image(systemName: isBookmarked ? "star.fill" : "star")
-                    .font(.caption)
-                    .foregroundStyle(isBookmarked ? .yellow : .secondary)
-                    .frame(width: 16, height: 16)
-            }
-            .buttonStyle(.plain)
-            .help(isBookmarked ? "Remove Bookmark" : "Add Bookmark")
-            .animation(VelaAnimation.micro, value: isBookmarked)
-
-            // Reload / Stop button
-            Button {
-                onReload()
-            } label: {
-                Image(systemName: isLoading ? "xmark" : "arrow.clockwise")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(width: 16, height: 16)
-            }
-            .buttonStyle(.plain)
-            .help(isLoading ? "Stop Loading" : "Reload")
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, isFocused ? 10 : 8)
-        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
-        .overlay(progressBar, alignment: .bottom)
         .phaseAnimator([false, true], trigger: submitTrigger) { content, phase in
             content
                 .scaleEffect(phase ? 0.97 : 1.0)
@@ -104,6 +47,125 @@ struct AddressBar: View {
             radius: isFocused ? 6 : 0
         )
         .animation(VelaAnimation.micro, value: isFocused)
+        .animation(VelaAnimation.micro, value: shouldShowSuggestions)
+    }
+
+    private var bar: some View {
+        HStack(spacing: 6) {
+            navigationButtons
+
+            Image(systemName: isSecure ? "lock.fill" : "magnifyingglass")
+                .foregroundStyle(isSecure ? .green : .secondary)
+                .font(.caption)
+                .frame(width: 16)
+
+            TextField("Search or enter website", text: $text)
+                .textFieldStyle(.plain)
+                .onSubmit {
+                    submitTrigger.toggle()
+                    onSubmit()
+                }
+
+            Button {
+                onToggleReader()
+            } label: {
+                Image(systemName: isReaderMode ? "book.fill" : "book")
+                    .font(.caption)
+                    .foregroundStyle(isReaderMode ? Color.accentColor : .secondary)
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.plain)
+            .help(isReaderMode ? "Exit Reader Mode" : "Reader Mode")
+
+            if hasActiveBoosts {
+                Image(systemName: "bolt.fill")
+                    .font(.caption)
+                    .foregroundStyle(.yellow)
+                    .frame(width: 16, height: 16)
+                    .help("Boosts active on this site")
+            }
+
+            Button {
+                onToggleBookmark()
+            } label: {
+                Image(systemName: isBookmarked ? "star.fill" : "star")
+                    .font(.caption)
+                    .foregroundStyle(isBookmarked ? .yellow : .secondary)
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.plain)
+            .help(isBookmarked ? "Remove Bookmark" : "Add Bookmark")
+            .animation(VelaAnimation.micro, value: isBookmarked)
+
+            Button {
+                onReload()
+            } label: {
+                Image(systemName: isLoading ? "xmark" : "arrow.clockwise")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.plain)
+            .help(isLoading ? "Stop Loading" : "Reload")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, isFocused ? 10 : 8)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .overlay(progressBar, alignment: .bottom)
+    }
+
+    private var shouldShowSuggestions: Bool {
+        isFocused && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !suggestions.isEmpty
+    }
+
+    private var suggestionsView: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(suggestions) { suggestion in
+                Button {
+                    onSelectSuggestion(suggestion)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: suggestion.iconName)
+                            .font(.caption)
+                            .foregroundStyle(iconColor(for: suggestion.kind))
+                            .frame(width: 18)
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(suggestion.title)
+                                .lineLimit(1)
+                                .font(.callout)
+                            Text(suggestion.subtitle)
+                                .lineLimit(1)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+
+                        Spacer()
+
+                        Text(suggestion.kind.rawValue.capitalized)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(6)
+        .background(.ultraThickMaterial, in: RoundedRectangle(cornerRadius: 10))
+        .shadow(color: .black.opacity(0.14), radius: 14, y: 6)
+    }
+
+    private func iconColor(for kind: AutocompleteSuggestion.Kind) -> Color {
+        switch kind {
+        case .bookmark: .yellow
+        case .tab: .accentColor
+        case .history: .secondary
+        case .search: .secondary
+        case .url: .secondary
+        }
     }
 
     private var navigationButtons: some View {

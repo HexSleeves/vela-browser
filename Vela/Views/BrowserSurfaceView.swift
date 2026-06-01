@@ -19,12 +19,23 @@ struct BrowserSurfaceView: View {
                 isBookmarked: store.activeTab?.url.flatMap { store.isBookmarked($0) } ?? false,
                 isReaderMode: store.activeTab?.isReaderMode ?? false,
                 hasActiveBoosts: store.activeTab?.url?.host().flatMap { !store.boostsForHost($0).isEmpty } ?? false,
+                suggestions: store.autocompleteSuggestions(for: addressText),
                 onSubmit: { store.loadAddressInput(addressText) },
                 onBack: { store.goBack() },
                 onForward: { store.goForward() },
                 onReload: { store.reload() },
                 onToggleBookmark: { store.toggleBookmark() },
-                onToggleReader: { store.toggleReaderMode() }
+                onToggleReader: { store.toggleReaderMode() },
+                onSelectSuggestion: { suggestion in
+                    if suggestion.kind == .tab, let tabID = suggestion.tabID {
+                        store.selectTab(tabID)
+                        addressText = store.tabs[tabID]?.url?.absoluteString ?? suggestion.completionText
+                    } else {
+                        addressText = suggestion.completionText
+                        store.loadAddressInput(suggestion.completionText)
+                    }
+                    isAddressFocused.wrappedValue = false
+                }
             )
             .focused(isAddressFocused)
             .padding(10)
@@ -47,10 +58,10 @@ struct BrowserSurfaceView: View {
                 if let splitID = store.splitTabID {
                     // Split view: two web views side by side
                     HSplitView {
-                        BrowserWebView(tabID: tabID)
+                        webContent(for: tabID)
                             .id(tabID)
 
-                        BrowserWebView(tabID: splitID)
+                        webContent(for: splitID)
                             .id(splitID)
                     }
                     .overlay(alignment: .top) {
@@ -71,7 +82,7 @@ struct BrowserSurfaceView: View {
                         .help("Close Split View")
                     }
                 } else {
-                    BrowserWebView(tabID: tabID)
+                    webContent(for: tabID)
                         .id(tabID)
                 }
             } else {
@@ -84,5 +95,31 @@ struct BrowserSurfaceView: View {
         .onChange(of: store.activeTab?.url) {
             addressText = store.activeTab?.url?.absoluteString ?? ""
         }
+    }
+
+    private func webContent(for tabID: BrowserTab.ID) -> some View {
+        BrowserWebView(tabID: tabID)
+            .overlay(alignment: .center) {
+                if let direction = store.swipeIndicator[tabID] {
+                    swipeIndicator(direction)
+                        .transition(.opacity.combined(with: .scale(scale: 0.86)))
+                }
+            }
+            .animation(VelaAnimation.emphasis, value: store.swipeIndicator[tabID] != nil)
+    }
+
+    private func swipeIndicator(_ direction: BrowserStore.SwipeDirection) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: direction == .back ? "chevron.left" : "chevron.right")
+                .font(.title3.weight(.semibold))
+            Text(direction == .back ? "Back" : "Forward")
+                .font(.caption.weight(.semibold))
+        }
+        .foregroundStyle(.primary)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.regularMaterial, in: Capsule())
+        .shadow(color: .black.opacity(0.16), radius: 12, y: 6)
+        .allowsHitTesting(false)
     }
 }

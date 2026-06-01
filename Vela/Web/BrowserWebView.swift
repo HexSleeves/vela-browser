@@ -86,6 +86,18 @@ struct BrowserWebView: NSViewRepresentable {
 
         // MARK: - WKNavigationDelegate
 
+        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+            if navigationAction.navigationType == .backForward,
+               let url = navigationAction.request.url {
+                if webView.backForwardList.backItem?.url == url {
+                    store?.showSwipeIndicator(.back, for: tabID)
+                } else if webView.backForwardList.forwardItem?.url == url {
+                    store?.showSwipeIndicator(.forward, for: tabID)
+                }
+            }
+            return .allow
+        }
+
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             Task { @MainActor in
                 store?.clearTabError(tabID)
@@ -244,12 +256,20 @@ struct BrowserWebView: NSViewRepresentable {
         func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
             let blockPopups = UserDefaults.standard.bool(forKey: "blockPopups")
 
-            // If pop-ups are blocked and this wasn't user-initiated, ignore
-            if blockPopups && !navigationAction.sourceFrame.isMainFrame && navigationAction.navigationType != .linkActivated {
+            // If pop-ups are blocked, only allow user-activated link popups.
+            if blockPopups && navigationAction.navigationType != .linkActivated {
                 return nil
             }
 
-            // Open as new tab
+            // In transient windows, keep popups inside the same privacy/lifetime boundary.
+            if let url = navigationAction.request.url,
+               let store = self.store,
+               store.isTransientTab(tabID) {
+                webView.load(URLRequest(url: url))
+                return nil
+            }
+
+            // Open regular pages as new regular tab.
             if let url = navigationAction.request.url {
                 Task { @MainActor in
                     VelaAnimation.withEmphasis {

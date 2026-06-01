@@ -188,12 +188,13 @@ private struct ClearDataView: View {
 
     private func performClear() {
         if clearHistory {
-            store.history.removeAll()
-            // Also persist the empty history
-            let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-                .appending(path: "Vela", directoryHint: .isDirectory)
-            let historyURL = directory.appending(path: "history.json")
-            try? "[]".data(using: .utf8)?.write(to: historyURL, options: [.atomic])
+            store.clearHistory()
+        }
+
+        if clearHistory || clearCache {
+            Task {
+                await FaviconCache.shared.clear()
+            }
         }
 
         var dataTypes: Set<String> = []

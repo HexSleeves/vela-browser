@@ -72,18 +72,7 @@ struct NewTabPageView: View {
                                 store.loadAddressInput(url.absoluteString)
                             } label: {
                                 VStack(spacing: 6) {
-                                    // Favicon
-                                    let faviconURL = URL(string: "https://www.google.com/s2/favicons?domain=\(url.host() ?? "")&sz=32")
-                                    AsyncImage(url: faviconURL) { phase in
-                                        switch phase {
-                                        case .success(let image):
-                                            image.resizable().aspectRatio(contentMode: .fit)
-                                        default:
-                                            Image(systemName: "globe")
-                                                .foregroundStyle(.secondary)
-                                        }
-                                    }
-                                    .frame(width: 24, height: 24)
+                                    FaviconView(url: url, size: 24)
 
                                     Text(title)
                                         .font(.caption)

@@ -128,6 +128,9 @@ struct CommandBarView: View {
             },
             CommandAction(id: "clear-data", title: "Clear Browsing Data", icon: "trash") { [store] in
                 store.clearHistory()
+                Task {
+                    await FaviconCache.shared.clear()
+                }
             },
             CommandAction(id: "bookmark", title: "Bookmark This Page", icon: "star") { [store] in
                 store.toggleBookmark()
@@ -143,7 +146,7 @@ struct CommandBarView: View {
     }
 
     private var filteredTabs: [BrowserTab] {
-        let allTabs = Array(store.tabs.values)
+        let allTabs = Array(store.tabs.values).filter { !store.isTransientTab($0.id) }
         guard !query.isEmpty else {
             return allTabs.sorted { $0.lastAccessedAt > $1.lastAccessedAt }.prefix(5).map { $0 }
         }
@@ -159,7 +162,9 @@ struct CommandBarView: View {
     private var filteredBookmarks: [Bookmark] {
         guard !query.isEmpty else { return [] }
         let lowered = query.lowercased()
-        let openURLs = Set(store.tabs.values.compactMap(\.url?.absoluteString))
+        let openURLs = Set(store.tabs.values
+            .filter { !store.isTransientTab($0.id) }
+            .compactMap(\.url?.absoluteString))
         return store.bookmarks
             .filter { bm in
                 !openURLs.contains(bm.url.absoluteString) &&
@@ -172,8 +177,10 @@ struct CommandBarView: View {
     private var filteredHistory: [HistoryEntry] {
         guard !query.isEmpty else { return [] }
         let lowered = query.lowercased()
-        // Exclude URLs that match open tabs (they're already shown)
-        let openURLs = Set(store.tabs.values.compactMap(\.url?.absoluteString))
+        // Exclude URLs that match non-transient open tabs (they're already shown)
+        let openURLs = Set(store.tabs.values
+            .filter { !store.isTransientTab($0.id) }
+            .compactMap(\.url?.absoluteString))
         return store.history
             .filter { entry in
                 !openURLs.contains(entry.url.absoluteString) &&
@@ -292,18 +299,7 @@ private struct CommandBarRow: View {
     private var resultIcon: some View {
         switch result {
         case .tab(let tab):
-            if let host = tab.url?.host(),
-               let url = URL(string: "https://www.google.com/s2/favicons?domain=\(host)&sz=32") {
-                AsyncImage(url: url) { phase in
-                    if case .success(let image) = phase {
-                        image.resizable().aspectRatio(contentMode: .fit)
-                    } else {
-                        Image(systemName: "globe").foregroundStyle(.secondary)
-                    }
-                }
-            } else {
-                Image(systemName: "globe").foregroundStyle(.secondary)
-            }
+            FaviconView(url: tab.url, size: 18)
         case .bookmark:
             Image(systemName: "star.fill").foregroundStyle(.yellow)
         case .history:

@@ -48,7 +48,7 @@ final class WebViewPool: WebViewPooling {
         }
 
         let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = .default()
+        configuration.websiteDataStore = store?.isPrivateTab(tabID) == true ? .nonPersistent() : .default()
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
         webView.customUserAgent = userAgent
@@ -59,8 +59,9 @@ final class WebViewPool: WebViewPooling {
     func load(_ url: URL, in tabID: BrowserTab.ID) {
         let wv = webView(for: tabID)
 
-        // Inject boosts for this host
-        if let host = url.host(), let store {
+        // Inject boosts for this host. Private browsing disables boosts by default
+        // so user scripts cannot observe private-page DOM without an explicit future permission model.
+        if store?.isPrivateTab(tabID) != true, let host = url.host(), let store {
             let matching = store.boostsForHost(host)
             // Clear previous user scripts and re-add
             wv.configuration.userContentController.removeAllUserScripts()

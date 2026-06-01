@@ -7,8 +7,6 @@ struct PrivateWindowView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var urlText = ""
     @State private var privateTabID: BrowserTab.ID?
-    @State private var canGoBack = false
-    @State private var canGoForward = false
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -24,14 +22,14 @@ struct PrivateWindowView: View {
                         .font(.caption)
                 }
                 .buttonStyle(.plain)
-                .disabled(!canGoBack)
+                .disabled(!(privateTabID.flatMap { store.tabs[$0]?.canGoBack } ?? false))
 
                 Button { goForward() } label: {
                     Image(systemName: "chevron.right")
                         .font(.caption)
                 }
                 .buttonStyle(.plain)
-                .disabled(!canGoForward)
+                .disabled(!(privateTabID.flatMap { store.tabs[$0]?.canGoForward } ?? false))
 
                 TextField("Search or enter URL…", text: $urlText)
                     .textFieldStyle(.plain)
@@ -82,33 +80,30 @@ struct PrivateWindowView: View {
         .onAppear {
             isFocused = true
         }
+        .onDisappear {
+            cleanupPrivateTab()
+        }
     }
 
     private func loadURL() {
         guard !urlText.isEmpty else { return }
 
         if privateTabID == nil {
-            let tab = BrowserTab(url: nil)
-            store.tabs[tab.id] = tab
-            privateTabID = tab.id
+            privateTabID = store.createTransientTab(kind: .privateBrowsing)
         }
 
         guard let tabID = privateTabID else { return }
-
-        let trimmed = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let url: URL
-        if let parsed = URL(string: trimmed), parsed.scheme != nil {
-            url = parsed
-        } else if trimmed.contains(".") && !trimmed.contains(" ") {
-            url = URL(string: "https://\(trimmed)") ?? URL(string: "https://google.com/search?q=\(trimmed)")!
-        } else {
-            url = URL(string: "https://google.com/search?q=\(trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed)")!
-        }
+        let url = store.destination(for: urlText)
 
         store.tabs[tabID]?.url = url
-        store.tabs[tabID]?.title = url.host() ?? trimmed
+        store.tabs[tabID]?.title = url.host() ?? url.absoluteString
         store.webViewPool.load(url, in: tabID)
         urlText = url.absoluteString
+    }
+
+    private func cleanupPrivateTab() {
+        store.discardTransientTab(privateTabID)
+        privateTabID = nil
     }
 
     private func goBack() {

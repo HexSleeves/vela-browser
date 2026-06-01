@@ -164,6 +164,82 @@ struct BrowserStoreTests {
         #expect(afterIDs == originalIDs)
     }
 
+    @Test("transient tab cleanup removes tab and pooled web view without recently closed entry")
+    func transientTabCleanupRemovesTabAndWebView() {
+        let store = makeStore()
+        let pool = store.webViewPool as? StubWebViewPool
+        let tabID = store.createTransientTab(kind: .littleVela)
+
+        store.discardTransientTab(tabID)
+
+        #expect(store.tabs[tabID] == nil)
+        #expect(pool?.removedTabIDs.contains(tabID) == true)
+        #expect(store.recentlyClosed.isEmpty)
+    }
+
+    @Test("private transient tab does not record history")
+    func privateTransientTabDoesNotRecordHistory() throws {
+        let store = makeStore()
+        let tabID = store.createTransientTab(kind: .privateBrowsing)
+        let url = try #require(URL(string: "https://private.example/secret"))
+        store.tabs[tabID]?.url = url
+        store.tabs[tabID]?.title = "Secret"
+        store.tabs[tabID]?.isLoading = true
+
+        store.updateTab(tabID, title: "Secret", url: url, isLoading: false)
+
+        #expect(store.history.isEmpty)
+    }
+
+    @Test("bookmark import parser handles Netscape bookmark HTML")
+    func bookmarkImportParserHandlesNetscapeHTML() throws {
+        let html = """
+        <!DOCTYPE NETSCAPE-Bookmark-file-1>
+        <DL><p>
+          <DT><A HREF="https://example.com">Example &amp; Co</A>
+          <DT><A HREF="javascript:alert(1)">Ignore Me</A>
+        </DL><p>
+        """
+
+        let bookmarks = BookmarkImportService().parseNetscapeBookmarksHTML(html)
+
+        #expect(bookmarks.count == 1)
+        #expect(bookmarks.first?.title == "Example & Co")
+        #expect(bookmarks.first?.url.absoluteString == "https://example.com")
+    }
+
+    @Test("autocomplete suggestions include tabs bookmarks history and search")
+    func autocompleteSuggestionsIncludeSources() throws {
+        let store = makeStore()
+        let tabURL = try #require(URL(string: "https://tabs.example"))
+        let bookmarkURL = try #require(URL(string: "https://bookmarks.example"))
+        let historyURL = try #require(URL(string: "https://history.example"))
+        store.createTab(url: tabURL)
+        store.bookmarks = [Bookmark(title: "Bookmark Match", url: bookmarkURL)]
+        store.history = [HistoryEntry(title: "History Match", url: historyURL)]
+
+        let suggestions = store.autocompleteSuggestions(for: "match", limit: 10)
+
+        #expect(suggestions.contains { $0.kind == .bookmark })
+        #expect(suggestions.contains { $0.kind == .history })
+        #expect(suggestions.contains { $0.kind == .search })
+    }
+
+    @Test("section-aware moveTab reorders only the provided visible section")
+    func sectionAwareMoveTabReordersVisibleSection() throws {
+        let store = makeStore()
+        store.createTab(url: try #require(URL(string: "https://a.example")))
+        let firstID = try #require(store.activeTabID)
+        store.createTab(url: try #require(URL(string: "https://b.example")))
+        let secondID = try #require(store.activeTabID)
+        store.createTab(url: try #require(URL(string: "https://c.example")))
+        let thirdID = try #require(store.activeTabID)
+
+        store.moveTab(thirdID, toSectionIndex: 0, sectionTabIDs: [firstID, thirdID])
+
+        #expect(store.activeWorkspace?.tabIDs == [thirdID, secondID, firstID])
+    }
+
     private func makeStore() -> BrowserStore {
         let theme = BrowserTheme.builtIns[0]
         let workspace = Workspace(name: "Personal", themeID: theme.id)

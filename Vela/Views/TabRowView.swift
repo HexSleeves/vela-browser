@@ -21,6 +21,13 @@ struct TabRowView: View {
             }
         } label: {
             HStack(spacing: 8) {
+                Image(systemName: "line.3.horizontal")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(isDragging ? Color.accentColor : Color.secondary.opacity(0.55))
+                    .opacity(isHovered || isDragging ? 1 : 0)
+                    .frame(width: 10)
+                    .animation(VelaAnimation.micro, value: isHovered || isDragging)
+
                 tabIcon
                     .frame(width: 18, height: 18)
 
@@ -62,7 +69,14 @@ struct TabRowView: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 7)
             .background {
-                if isSelected {
+                if isDragging {
+                    RoundedRectangle(cornerRadius: 9)
+                        .fill(.regularMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 9)
+                                .stroke(Color.accentColor.opacity(0.35), lineWidth: 1)
+                        )
+                } else if isSelected {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color.primary.opacity(0.08))
                         .matchedGeometryEffect(id: "selection", in: selectionNamespace)
@@ -72,6 +86,7 @@ struct TabRowView: View {
                 }
             }
             .animation(VelaAnimation.micro, value: isHovered)
+            .animation(VelaAnimation.micro, value: isDragging)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -177,33 +192,8 @@ struct TabRowView: View {
             Image(systemName: "pin.fill")
                 .foregroundStyle(.secondary)
                 .font(.caption)
-        } else if let faviconURL {
-            AsyncImage(url: faviconURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                case .failure:
-                    Image(systemName: "globe")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                default:
-                    Image(systemName: "globe")
-                        .foregroundStyle(.secondary)
-                        .font(.caption)
-                }
-            }
         } else {
-            Image(systemName: "globe")
-                .foregroundStyle(.secondary)
-                .font(.caption)
+            FaviconView(url: tab.url, size: 16)
         }
-    }
-
-    /// Google's favicon service URL for the tab's domain.
-    private var faviconURL: URL? {
-        guard let host = tab.url?.host() else { return nil }
-        return URL(string: "https://www.google.com/s2/favicons?domain=\(host)&sz=32")
     }
 }
