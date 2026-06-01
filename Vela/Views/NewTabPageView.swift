@@ -5,6 +5,23 @@ struct NewTabPageView: View {
     @State private var searchText = ""
     @FocusState private var isFocused: Bool
 
+    /// Top sites derived from history (most visited domains)
+    private var frequentSites: [(String, URL)] {
+        var domainCounts: [String: (count: Int, url: URL, title: String)] = [:]
+        for entry in store.history {
+            guard let host = entry.url.host() else { continue }
+            if let existing = domainCounts[host] {
+                domainCounts[host] = (existing.count + 1, existing.url, existing.title)
+            } else {
+                domainCounts[host] = (1, entry.url, entry.title)
+            }
+        }
+        return domainCounts
+            .sorted { $0.value.count > $1.value.count }
+            .prefix(8)
+            .map { ($0.value.title.isEmpty ? $0.key : $0.value.title, $0.value.url) }
+    }
+
     var body: some View {
         ZStack {
             // Theme gradient background
@@ -47,11 +64,48 @@ struct NewTabPageView: View {
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
                 .frame(maxWidth: 480)
 
+                // Frequent sites grid
+                if !frequentSites.isEmpty {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: 4), spacing: 12) {
+                        ForEach(frequentSites, id: \.1) { title, url in
+                            Button {
+                                store.loadAddressInput(url.absoluteString)
+                            } label: {
+                                VStack(spacing: 6) {
+                                    // Favicon
+                                    let faviconURL = URL(string: "https://www.google.com/s2/favicons?domain=\(url.host() ?? "")&sz=32")
+                                    AsyncImage(url: faviconURL) { phase in
+                                        switch phase {
+                                        case .success(let image):
+                                            image.resizable().aspectRatio(contentMode: .fit)
+                                        default:
+                                            Image(systemName: "globe")
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    .frame(width: 24, height: 24)
+
+                                    Text(title)
+                                        .font(.caption)
+                                        .lineLimit(1)
+                                        .foregroundStyle(.primary)
+                                }
+                                .frame(width: 80, height: 60)
+                                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .frame(maxWidth: 400)
+                    .padding(.top, 8)
+                }
+
                 // Shortcut hints
                 HStack(spacing: 20) {
                     shortcutHint("⌘T", "New Tab")
                     shortcutHint("⌘K", "Command Bar")
                     shortcutHint("⌘L", "Address Bar")
+                    shortcutHint("⌘Y", "History")
                 }
                 .padding(.top, 8)
 

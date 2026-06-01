@@ -11,6 +11,7 @@ struct AddressBar: View {
     var accentColor: Color = .accentColor
     var isBookmarked: Bool = false
     var isReaderMode: Bool = false
+    var hasActiveBoosts: Bool = false
     var onSubmit: () -> Void
     var onBack: () -> Void = {}
     var onForward: () -> Void = {}
@@ -49,6 +50,15 @@ struct AddressBar: View {
             }
             .buttonStyle(.plain)
             .help(isReaderMode ? "Exit Reader Mode" : "Reader Mode")
+
+            // Boost indicator
+            if hasActiveBoosts {
+                Image(systemName: "bolt.fill")
+                    .font(.caption)
+                    .foregroundStyle(.yellow)
+                    .frame(width: 16, height: 16)
+                    .help("Boosts active on this site")
+            }
 
             // Bookmark toggle
             Button {

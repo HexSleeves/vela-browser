@@ -96,7 +96,50 @@ struct CommandBarView: View {
         let tabResults = filteredTabs.map { CommandBarResult.tab($0) }
         let bookmarkResults = filteredBookmarks.map { CommandBarResult.bookmark($0) }
         let historyResults = filteredHistory.map { CommandBarResult.history($0) }
-        return (tabResults + bookmarkResults + historyResults).prefix(10).map { $0 }
+        let actionResults = filteredActions.map { CommandBarResult.action($0) }
+        return (actionResults + tabResults + bookmarkResults + historyResults).prefix(12).map { $0 }
+    }
+
+    private var filteredActions: [CommandAction] {
+        let allActions: [CommandAction] = [
+            CommandAction(id: "history", title: "Show History", icon: "clock") { [store] in
+                store.isHistoryVisible = true
+            },
+            CommandAction(id: "boosts", title: "Open Boost Editor", icon: "bolt") { [store] in
+                store.isBoostEditorVisible = true
+            },
+            CommandAction(id: "reader", title: "Toggle Reader Mode", icon: "book") { [store] in
+                store.toggleReaderMode()
+            },
+            CommandAction(id: "split", title: "Toggle Split View", icon: "rectangle.split.2x1") { [store] in
+                if store.splitTabID != nil {
+                    store.closeSplit()
+                } else if let tabID = store.activeTabID {
+                    let tab = BrowserTab(url: nil)
+                    store.tabs[tab.id] = tab
+                    if let wsIndex = store.workspaces.firstIndex(where: { $0.id == store.activeWorkspaceID }) {
+                        store.workspaces[wsIndex].tabIDs.append(tab.id)
+                    }
+                    store.splitTabID = tab.id
+                }
+            },
+            CommandAction(id: "new-group", title: "Create Tab Group", icon: "folder.badge.plus") { [store] in
+                store.createTabGroup(name: "New Group")
+            },
+            CommandAction(id: "clear-data", title: "Clear Browsing Data", icon: "trash") { [store] in
+                store.clearHistory()
+            },
+            CommandAction(id: "bookmark", title: "Bookmark This Page", icon: "star") { [store] in
+                store.toggleBookmark()
+            },
+            CommandAction(id: "new-workspace", title: "New Workspace", icon: "plus.rectangle.on.rectangle") { [store] in
+                store.createWorkspace(name: "Space \(store.workspaces.count + 1)")
+            },
+        ]
+
+        guard !query.isEmpty else { return [] }
+        let lowered = query.lowercased()
+        return allActions.filter { $0.title.lowercased().contains(lowered) }
     }
 
     private var filteredTabs: [BrowserTab] {
@@ -168,6 +211,11 @@ struct CommandBarView: View {
             VelaAnimation.withEmphasis {
                 store.isCommandBarVisible = false
             }
+        case .action(let action):
+            VelaAnimation.withEmphasis {
+                store.isCommandBarVisible = false
+            }
+            action.action()
         }
     }
 
@@ -184,14 +232,23 @@ enum CommandBarResult: Identifiable {
     case tab(BrowserTab)
     case bookmark(Bookmark)
     case history(HistoryEntry)
+    case action(CommandAction)
 
     var id: String {
         switch self {
         case .tab(let tab): return "tab-\(tab.id)"
         case .bookmark(let bm): return "bookmark-\(bm.id)"
         case .history(let entry): return "history-\(entry.id)"
+        case .action(let action): return "action-\(action.id)"
         }
     }
+}
+
+struct CommandAction: Identifiable {
+    let id: String
+    let title: String
+    let icon: String
+    let action: @MainActor () -> Void
 }
 
 // MARK: - Result Row
@@ -210,10 +267,12 @@ private struct CommandBarRow: View {
                     .lineLimit(1)
                     .font(.body)
 
-                Text(resultURL)
-                    .lineLimit(1)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                if !resultSubtitle.isEmpty {
+                    Text(resultSubtitle)
+                        .lineLimit(1)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer()
@@ -249,6 +308,8 @@ private struct CommandBarRow: View {
             Image(systemName: "star.fill").foregroundStyle(.yellow)
         case .history:
             Image(systemName: "clock").foregroundStyle(.secondary)
+        case .action(let action):
+            Image(systemName: action.icon).foregroundStyle(Color.accentColor)
         }
     }
 
@@ -257,14 +318,16 @@ private struct CommandBarRow: View {
         case .tab(let tab): return tab.title
         case .bookmark(let bm): return bm.title
         case .history(let entry): return entry.title
+        case .action(let action): return action.title
         }
     }
 
-    private var resultURL: String {
+    private var resultSubtitle: String {
         switch result {
         case .tab(let tab): return tab.url?.absoluteString ?? ""
         case .bookmark(let bm): return bm.url.absoluteString
         case .history(let entry): return entry.url.absoluteString
+        case .action: return ""
         }
     }
 
@@ -288,6 +351,13 @@ private struct CommandBarRow: View {
             Text("History")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
+        case .action:
+            Text("Action")
+                .font(.caption2)
+                .foregroundStyle(Color.accentColor)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
                 .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))

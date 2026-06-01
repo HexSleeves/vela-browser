@@ -24,6 +24,18 @@ struct MainBrowserWindow: View {
             }
         }
         .animation(VelaAnimation.emphasis, value: store.isCommandBarVisible)
+        .sheet(isPresented: Binding(
+            get: { store.isHistoryVisible },
+            set: { store.isHistoryVisible = $0 }
+        )) {
+            HistoryView()
+        }
+        .sheet(isPresented: Binding(
+            get: { store.isBoostEditorVisible },
+            set: { store.isBoostEditorVisible = $0 }
+        )) {
+            BoostEditorView()
+        }
         .focusedValue(\.browserCommandSink) { command in
             handle(command)
         }
@@ -100,6 +112,24 @@ struct MainBrowserWindow: View {
                 store.undoCloseTab()
             }
             addressText = store.activeTab?.url?.absoluteString ?? ""
+
+        case .showHistory:
+            store.isHistoryVisible.toggle()
+
+        case .toggleSplit:
+            VelaAnimation.withLayout {
+                if store.splitTabID != nil {
+                    store.closeSplit()
+                } else if let tabID = store.activeTabID {
+                    // Open split with a new tab
+                    let tab = BrowserTab(url: nil)
+                    store.tabs[tab.id] = tab
+                    if let wsIndex = store.workspaces.firstIndex(where: { $0.id == store.activeWorkspaceID }) {
+                        store.workspaces[wsIndex].tabIDs.append(tab.id)
+                    }
+                    store.splitTabID = tab.id
+                }
+            }
         }
     }
 }

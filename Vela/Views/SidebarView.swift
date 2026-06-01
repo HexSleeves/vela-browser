@@ -147,6 +147,22 @@ struct SidebarView: View {
                 if !ungroupedTabs.isEmpty {
                     TabSectionView(title: store.tabGroups.isEmpty ? "Tabs" : "Ungrouped", tabs: ungroupedTabs, isPinned: false)
                 }
+
+                // New Group button
+                Button {
+                    promptCreateGroup()
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "plus")
+                            .font(.caption2)
+                        Text("New Group")
+                            .font(.caption)
+                    }
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                }
+                .buttonStyle(.plain)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -155,6 +171,27 @@ struct SidebarView: View {
             insertion: .move(edge: slideDirection).combined(with: .opacity),
             removal: .move(edge: slideDirection == .trailing ? .leading : .trailing).combined(with: .opacity)
         ))
+    }
+
+    private func promptCreateGroup() {
+        let alert = NSAlert()
+        alert.messageText = "New Tab Group"
+        alert.informativeText = "Enter a name for this group:"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        field.stringValue = ""
+        field.placeholderString = "Group name"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Create")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        if alert.runModal() == .alertFirstButtonReturn {
+            let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+            if !name.isEmpty {
+                VelaAnimation.withEmphasis {
+                    store.createTabGroup(name: name)
+                }
+            }
+        }
     }
 
     private var bookmarksSection: some View {
@@ -308,10 +345,34 @@ struct SidebarView: View {
                 Spacer()
 
                 Button {
+                    store.isHistoryVisible.toggle()
+                } label: {
+                    Image(systemName: "clock")
+                        .frame(width: 24, height: 24)
+                }
+                .help("History (⌘Y)")
+
+                Button {
+                    store.isBoostEditorVisible.toggle()
+                } label: {
+                    Image(systemName: "bolt")
+                        .frame(width: 24, height: 24)
+                }
+                .help("Boosts")
+
+                Button {
                     store.isDownloadsVisible.toggle()
                 } label: {
-                    Image(systemName: "arrow.down.circle")
-                        .frame(width: 24, height: 24)
+                    ZStack(alignment: .topTrailing) {
+                        Image(systemName: "arrow.down.circle")
+                            .frame(width: 24, height: 24)
+                        if store.downloads.contains(where: { $0.state == .downloading }) {
+                            Circle()
+                                .fill(.blue)
+                                .frame(width: 6, height: 6)
+                                .offset(x: 2, y: -2)
+                        }
+                    }
                 }
                 .help("Downloads")
                 .popover(isPresented: Binding(

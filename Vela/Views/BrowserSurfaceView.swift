@@ -18,6 +18,7 @@ struct BrowserSurfaceView: View {
                 accentColor: store.activeTheme.accent.color,
                 isBookmarked: store.activeTab?.url.flatMap { store.isBookmarked($0) } ?? false,
                 isReaderMode: store.activeTab?.isReaderMode ?? false,
+                hasActiveBoosts: store.activeTab?.url?.host().flatMap { !store.boostsForHost($0).isEmpty } ?? false,
                 onSubmit: { store.loadAddressInput(addressText) },
                 onBack: { store.goBack() },
                 onForward: { store.goForward() },
@@ -52,6 +53,23 @@ struct BrowserSurfaceView: View {
                         BrowserWebView(tabID: splitID)
                             .id(splitID)
                     }
+                    .overlay(alignment: .top) {
+                        // Close split button at top center
+                        Button {
+                            VelaAnimation.withLayout {
+                                store.closeSplit()
+                            }
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title3)
+                                .foregroundStyle(.secondary)
+                                .padding(6)
+                                .background(.regularMaterial, in: Circle())
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 8)
+                        .help("Close Split View")
+                    }
                 } else {
                     BrowserWebView(tabID: tabID)
                         .id(tabID)
@@ -61,6 +79,9 @@ struct BrowserSurfaceView: View {
             }
         }
         .onChange(of: store.activeTabID) {
+            addressText = store.activeTab?.url?.absoluteString ?? ""
+        }
+        .onChange(of: store.activeTab?.url) {
             addressText = store.activeTab?.url?.absoluteString ?? ""
         }
     }

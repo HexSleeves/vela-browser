@@ -27,6 +27,7 @@ struct BrowserWebView: NSViewRepresentable {
         context.coordinator.observe(nsView)
     }
 
+    @MainActor
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         let tabID: BrowserTab.ID
         weak var store: BrowserStore?
@@ -54,37 +55,31 @@ struct BrowserWebView: NSViewRepresentable {
                 }
             }
 
-            canGoBackObservation = webView.observe(\.canGoBack, options: [.new]) { [weak self] webView, _ in
-                guard let self else { return }
-                let value = webView.canGoBack
+            canGoBackObservation = webView.observe(\.canGoBack, options: [.new]) { [weak self] webView, change in
+                guard let self, let value = change.newValue else { return }
                 Task { @MainActor in
                     self.store?.updateNavState(self.tabID, canGoBack: value, canGoForward: nil)
                 }
             }
 
-            canGoForwardObservation = webView.observe(\.canGoForward, options: [.new]) { [weak self] webView, _ in
-                guard let self else { return }
-                let value = webView.canGoForward
+            canGoForwardObservation = webView.observe(\.canGoForward, options: [.new]) { [weak self] webView, change in
+                guard let self, let value = change.newValue else { return }
                 Task { @MainActor in
                     self.store?.updateNavState(self.tabID, canGoBack: nil, canGoForward: value)
                 }
             }
 
-            urlObservation = webView.observe(\.url, options: [.new]) { [weak self] webView, _ in
-                guard let self else { return }
-                let url = webView.url
-                let title = webView.title
+            urlObservation = webView.observe(\.url, options: [.new]) { [weak self] webView, change in
+                guard let self, let url = change.newValue ?? nil else { return }
                 Task { @MainActor in
-                    self.store?.updateTab(self.tabID, title: title, url: url, isLoading: webView.isLoading)
+                    self.store?.updateTab(self.tabID, title: nil, url: url, isLoading: webView.isLoading)
                 }
             }
 
-            titleObservation = webView.observe(\.title, options: [.new]) { [weak self] webView, _ in
-                guard let self else { return }
-                let title = webView.title
-                let url = webView.url
+            titleObservation = webView.observe(\.title, options: [.new]) { [weak self] webView, change in
+                guard let self, let title = change.newValue ?? nil else { return }
                 Task { @MainActor in
-                    self.store?.updateTab(self.tabID, title: title, url: url, isLoading: webView.isLoading)
+                    self.store?.updateTab(self.tabID, title: title, url: nil, isLoading: webView.isLoading)
                 }
             }
         }
@@ -130,21 +125,17 @@ struct BrowserWebView: NSViewRepresentable {
 
         // MARK: - WKNavigationDelegate: SSL Challenges
 
-        func webView(_ webView: WKWebView, didReceive challenge: URLAuthenticationChallenge, completionHandler: @escaping (URLSession.AuthChallengeDisposition, URLCredential?) -> Void) {
+        func webView(_ webView: WKWebView, respondTo challenge: URLAuthenticationChallenge) async -> (URLSession.AuthChallengeDisposition, URLCredential?) {
             guard challenge.protectionSpace.authenticationMethod == NSURLAuthenticationMethodServerTrust,
                   let serverTrust = challenge.protectionSpace.serverTrust else {
-                completionHandler(.performDefaultHandling, nil)
-                return
+                return (.performDefaultHandling, nil)
             }
 
             let host = challenge.protectionSpace.host
-            Task { @MainActor in
-                if self.store?.sslExceptions.contains(host) == true {
-                    completionHandler(.useCredential, URLCredential(trust: serverTrust))
-                } else {
-                    completionHandler(.performDefaultHandling, nil)
-                }
+            if store?.sslExceptions.contains(host) == true {
+                return (.useCredential, URLCredential(trust: serverTrust))
             }
+            return (.performDefaultHandling, nil)
         }
 
         // MARK: - WKNavigationDelegate: Downloads
@@ -171,7 +162,7 @@ struct BrowserWebView: NSViewRepresentable {
 
         // MARK: - WKUIDelegate: JS Dialogs
 
-        func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping () -> Void) {
+        func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo) async {
             let alert = NSAlert()
             alert.messageText = frame.request.url?.host() ?? "Web Page"
             alert.informativeText = message
@@ -179,16 +170,13 @@ struct BrowserWebView: NSViewRepresentable {
             alert.alertStyle = .informational
 
             if let window = webView.window {
-                alert.beginSheetModal(for: window) { _ in
-                    completionHandler()
-                }
+                _ = await alert.beginSheetModal(for: window)
             } else {
                 alert.runModal()
-                completionHandler()
             }
         }
 
-        func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (Bool) -> Void) {
+        func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String, initiatedByFrame frame: WKFrameInfo) async -> Bool {
             let alert = NSAlert()
             alert.messageText = frame.request.url?.host() ?? "Web Page"
             alert.informativeText = message
@@ -196,17 +184,16 @@ struct BrowserWebView: NSViewRepresentable {
             alert.addButton(withTitle: "Cancel")
             alert.alertStyle = .informational
 
+            let response: NSApplication.ModalResponse
             if let window = webView.window {
-                alert.beginSheetModal(for: window) { response in
-                    completionHandler(response == .alertFirstButtonReturn)
-                }
+                response = await alert.beginSheetModal(for: window)
             } else {
-                let response = alert.runModal()
-                completionHandler(response == .alertFirstButtonReturn)
+                response = alert.runModal()
             }
+            return response == .alertFirstButtonReturn
         }
 
-        func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping (String?) -> Void) {
+        func webView(_ webView: WKWebView, runJavaScriptTextInputPanelWithPrompt prompt: String, defaultText: String?, initiatedByFrame frame: WKFrameInfo) async -> String? {
             let alert = NSAlert()
             alert.messageText = frame.request.url?.host() ?? "Web Page"
             alert.informativeText = prompt
@@ -217,19 +204,18 @@ struct BrowserWebView: NSViewRepresentable {
             textField.stringValue = defaultText ?? ""
             alert.accessoryView = textField
 
+            let response: NSApplication.ModalResponse
             if let window = webView.window {
-                alert.beginSheetModal(for: window) { response in
-                    completionHandler(response == .alertFirstButtonReturn ? textField.stringValue : nil)
-                }
+                response = await alert.beginSheetModal(for: window)
             } else {
-                let response = alert.runModal()
-                completionHandler(response == .alertFirstButtonReturn ? textField.stringValue : nil)
+                response = alert.runModal()
             }
+            return response == .alertFirstButtonReturn ? textField.stringValue : nil
         }
 
         // MARK: - WKUIDelegate: Media Permissions
 
-        func webView(_ webView: WKWebView, requestMediaCapturePermissionFor origin: WKSecurityOrigin, initiatedByFrame frame: WKFrameInfo, type: WKMediaCaptureType, decisionHandler: @escaping (WKPermissionDecision) -> Void) {
+        func webView(_ webView: WKWebView, decideMediaCapturePermissionsFor origin: WKSecurityOrigin, initiatedBy frame: WKFrameInfo, type: WKMediaCaptureType) async -> WKPermissionDecision {
             let permissionName: String = switch type {
             case .camera: "camera"
             case .microphone: "microphone"
@@ -244,14 +230,13 @@ struct BrowserWebView: NSViewRepresentable {
             alert.addButton(withTitle: "Deny")
             alert.alertStyle = .informational
 
+            let response: NSApplication.ModalResponse
             if let window = webView.window {
-                alert.beginSheetModal(for: window) { response in
-                    decisionHandler(response == .alertFirstButtonReturn ? .grant : .deny)
-                }
+                response = await alert.beginSheetModal(for: window)
             } else {
-                let response = alert.runModal()
-                decisionHandler(response == .alertFirstButtonReturn ? .grant : .deny)
+                response = alert.runModal()
             }
+            return response == .alertFirstButtonReturn ? .grant : .deny
         }
 
         // MARK: - WKUIDelegate: New Window (window.open, target=_blank)

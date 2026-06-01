@@ -14,6 +14,8 @@ final class BrowserStore {
     var findText = ""
     var isCommandBarVisible = false
     var isDownloadsVisible = false
+    var isHistoryVisible = false
+    var isBoostEditorVisible = false
     var downloads: [DownloadItem] = []
     var bookmarks: [Bookmark] = []
     var recentlyClosed: [ClosedTab] = []
@@ -76,6 +78,7 @@ final class BrowserStore {
         self.themes = snapshot.themes
         self.activeWorkspaceID = snapshot.activeWorkspaceID
         self.activeTabID = snapshot.activeTabID
+        self.tabGroups = snapshot.tabGroups
         self.persistence = persistence
         self.navigationService = navigationService
         self.webViewPool = webViewPool
@@ -404,6 +407,7 @@ final class BrowserStore {
     func toggleGroupCollapse(_ groupID: TabGroup.ID) {
         guard let index = tabGroups.firstIndex(where: { $0.id == groupID }) else { return }
         tabGroups[index].isCollapsed.toggle()
+        persist()
     }
 
     func ungroupedTabIDs(in workspace: Workspace) -> [BrowserTab.ID] {
@@ -432,6 +436,12 @@ final class BrowserStore {
     func toggleBoost(_ id: Boost.ID) {
         guard let index = boosts.firstIndex(where: { $0.id == id }) else { return }
         boosts[index].isEnabled.toggle()
+        persistBoosts()
+    }
+
+    func updateBoost(_ boost: Boost) {
+        guard let index = boosts.firstIndex(where: { $0.id == boost.id }) else { return }
+        boosts[index] = boost
         persistBoosts()
     }
 
@@ -676,6 +686,16 @@ final class BrowserStore {
         history = entries
     }
 
+    func clearHistory() {
+        history.removeAll()
+        persistHistory()
+    }
+
+    func deleteHistoryEntry(_ id: HistoryEntry.ID) {
+        history.removeAll { $0.id == id }
+        persistHistory()
+    }
+
     private func persist() {
         let snapshot = BrowserStateSnapshot(
             schemaVersion: 1,
@@ -683,7 +703,8 @@ final class BrowserStore {
             activeTabID: activeTabID,
             workspaces: workspaces,
             tabs: Array(tabs.values),
-            themes: themes
+            themes: themes,
+            tabGroups: tabGroups
         )
         try? persistence.save(snapshot)
     }

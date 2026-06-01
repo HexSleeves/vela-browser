@@ -106,6 +106,18 @@ struct BrowserCommands: Commands {
                 commandSink?(.printPage)
             }
             .keyboardShortcut("p", modifiers: .command)
+
+            Divider()
+
+            Button("Show History") {
+                commandSink?(.showHistory)
+            }
+            .keyboardShortcut("y", modifiers: .command)
+
+            Button("Toggle Split View") {
+                commandSink?(.toggleSplit)
+            }
+            .keyboardShortcut("d", modifiers: [.command, .shift])
         }
 
         // MARK: - Tab Selection (⌘1-9)
@@ -139,6 +151,8 @@ enum BrowserCommand {
     case printPage
     case toggleCommandBar
     case undoCloseTab
+    case showHistory
+    case toggleSplit
 }
 
 private struct BrowserCommandSinkKey: FocusedValueKey {

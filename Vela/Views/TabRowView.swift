@@ -113,6 +113,45 @@ struct TabRowView: View {
                 }
             }
 
+            Button("Move to New Group…") {
+                let alert = NSAlert()
+                alert.messageText = "New Tab Group"
+                let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+                field.placeholderString = "Group name"
+                alert.accessoryView = field
+                alert.addButton(withTitle: "Create")
+                alert.addButton(withTitle: "Cancel")
+                alert.window.initialFirstResponder = field
+                if alert.runModal() == .alertFirstButtonReturn {
+                    let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+                    if !name.isEmpty {
+                        store.createTabGroup(name: name)
+                        if let group = store.tabGroups.last {
+                            store.moveTabToGroup(tab.id, groupID: group.id)
+                        }
+                    }
+                }
+            }
+
+            Button("Duplicate Tab") {
+                store.createTab(url: tab.url)
+            }
+
+            Button("Copy URL") {
+                if let url = tab.url {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                }
+            }
+
+            if store.splitTabID == nil {
+                Button("Open in Split View") {
+                    VelaAnimation.withLayout {
+                        store.openInSplit(tab.id)
+                    }
+                }
+            }
+
             Divider()
 
             Button("Close Tab") {
