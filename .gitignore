@@ -1,2 +1,182 @@
+# =============================================================================
+# Project-specific
+# =============================================================================
 .bg-shell/
 .gsd/
+
+# =============================================================================
+# macOS
+# =============================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+*.dmg
+*.dmg.sparseimage
+
+# =============================================================================
+# Xcode
+# =============================================================================
+## User settings
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad
+
+## Xcode 8 and earlier
+*.xccheckout
+*.xcscmblueprint
+
+## Build generated
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+*.app
+
+## Playgrounds
+timeline.xctimeline
+playground.xcworkspace
+
+## SwiftUI Previews
+.swiftpm/
+
+# =============================================================================
+# Swift Package Manager
+# =============================================================================
+Packages/
+Package.resolved
+*.xcodeproj
+*.xcworkspace
+.swiftpm/
+.build/
+
+# =============================================================================
+# CocoaPods
+# =============================================================================
+Pods/
+*.xcworkspace
+!default.xcworkspace/contents.xcworkspacedata
+
+# =============================================================================
+# Carthage
+# =============================================================================
+Carthage/Checkouts
+Carthage/Build/
+
+# =============================================================================
+# fastlane
+# =============================================================================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+fastlane/.env
+
+# =============================================================================
+# Code Injection
+# =============================================================================
+iOSInjectionProject/
+
+# =============================================================================
+# App Specific
+# =============================================================================
+# Archives
+*.xcarchive
+
+# Profiling
+*.trace
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Credentials
+*.p8
+*.p12
+*.mobileprovision
+*.provisionprofile
+*.cer
+*.certSigningRequest
+*.certSigningRequest
+*.key
+*.pem
+
+# =============================================================================
+# IDEs
+# =============================================================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# AppCode
+.idea/
+
+# Cursor
+.cursor/
+
+# Zed
+.zed/
+
+# Nova
+.nova/
+
+# Emacs
+*~
+*#*
+
+# Vim
+*.swp
+*.swo
+*.swn
+
+# =============================================================================
+# Misc
+# =============================================================================
+*.orig
+*.patch
+*.diff
+
+# Backup files
+*.bak
+*.backup
+
+# Node (if using any JS tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if using any Python tooling)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Ruby (if using any Ruby tooling)
+*.gem
+.bundle/
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Generated documentation
+docs/generated/
