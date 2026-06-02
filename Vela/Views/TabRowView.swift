@@ -99,6 +99,18 @@ struct TabRowView: View {
                 store.setPinned(tab.id, isPinned: !tab.isPinned)
             }
 
+            if store.isFavorite(tab.id) {
+                Button("Remove from Favorites") {
+                    VelaAnimation.withMicro { store.removeFavorite(tab.id) }
+                }
+            } else if store.favoriteTabIDs.count < 8 {
+                Button("Add to Favorites") {
+                    VelaAnimation.withMicro { store.addFavorite(tab.id) }
+                }
+            }
+
+            Divider()
+
             if tab.id != store.activeTabID {
                 Button("Open in Split View") {
                     VelaAnimation.withLayout {

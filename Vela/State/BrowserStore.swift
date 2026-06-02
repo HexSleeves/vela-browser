@@ -13,8 +13,7 @@ final class BrowserStore {
     var isFindBarVisible = false
     var findText = ""
     var isCommandBarVisible = false
-    var isDownloadsVisible = false
-    var isHistoryVisible = false
+    var isLibraryVisible = false
     var isBoostEditorVisible = false
     var downloads: [DownloadItem] = []
     var bookmarks: [Bookmark] = []
@@ -24,6 +23,7 @@ final class BrowserStore {
     var splitTabID: BrowserTab.ID? // Second tab in split view
     var boosts: [Boost] = []
     var tabGroups: [TabGroup] = []
+    var favoriteTabIDs: [BrowserTab.ID] = []
     var swipeIndicator: [BrowserTab.ID: SwipeDirection] = [:]
 
     enum TransientTabKind {
@@ -47,6 +47,8 @@ final class BrowserStore {
 
     private static let maxHistoryEntries = 500
 
+    private static let maxDownloadEntries = 200
+
     private var transientTabs: [BrowserTab.ID: TransientTabKind] = [:]
 
     let webViewPool: WebViewPooling
@@ -61,6 +63,7 @@ final class BrowserStore {
             store.loadHistory()
             store.loadBookmarks()
             store.loadBoosts()
+            store.loadDownloads()
             store.archiveStaleTabsIfNeeded()
             return store
         }
@@ -92,6 +95,7 @@ final class BrowserStore {
         self.activeWorkspaceID = snapshot.activeWorkspaceID
         self.activeTabID = snapshot.activeTabID
         self.tabGroups = snapshot.tabGroups
+        self.favoriteTabIDs = snapshot.favoriteTabIDs
         self.persistence = persistence
         self.navigationService = navigationService
         self.webViewPool = webViewPool
@@ -167,6 +171,7 @@ final class BrowserStore {
             sanitized.tabIDs = group.tabIDs.filter { workspaceTabIDs.contains($0) }
             return sanitized
         }
+        favoriteTabIDs = favoriteTabIDs.filter { tabs[$0] != nil }
         if let activeTabID, !workspaceTabIDs.contains(activeTabID) {
             self.activeTabID = activeWorkspace?.tabIDs.first
         }
@@ -211,6 +216,7 @@ final class BrowserStore {
             }
         }
 
+        favoriteTabIDs.removeAll { $0 == tabID }
         tabs.removeValue(forKey: tabID)
         webViewPool.remove(tabID: tabID)
 
@@ -571,6 +577,68 @@ final class BrowserStore {
         guard let data = try? Data(contentsOf: url),
               let entries = try? JSONDecoder().decode([Boost].self, from: data) else { return }
         boosts = entries
+    }
+
+    // MARK: - Favorites
+
+    func addFavorite(_ tabID: BrowserTab.ID) {
+        guard tabs[tabID] != nil,
+              !favoriteTabIDs.contains(tabID),
+              favoriteTabIDs.count < 8 else { return }
+        favoriteTabIDs.append(tabID)
+        persist()
+    }
+
+    func removeFavorite(_ tabID: BrowserTab.ID) {
+        favoriteTabIDs.removeAll { $0 == tabID }
+        persist()
+    }
+
+    func reorderFavorites(from fromIndex: Int, to toIndex: Int) {
+        guard fromIndex >= 0, fromIndex < favoriteTabIDs.count,
+              toIndex >= 0, toIndex < favoriteTabIDs.count,
+              fromIndex != toIndex else { return }
+        let id = favoriteTabIDs.remove(at: fromIndex)
+        favoriteTabIDs.insert(id, at: toIndex)
+        persist()
+    }
+
+    func isFavorite(_ tabID: BrowserTab.ID) -> Bool {
+        favoriteTabIDs.contains(tabID)
+    }
+
+    var favoriteTabsWithWorkspace: [(tab: BrowserTab, workspaceID: Workspace.ID)] {
+        favoriteTabIDs.compactMap { id in
+            guard let tab = tabs[id],
+                  let wsID = workspaces.first(where: { $0.tabIDs.contains(id) })?.id else { return nil }
+            return (tab: tab, workspaceID: wsID)
+        }
+    }
+
+    // MARK: - Downloads
+
+    func persistDownloads() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "downloads.json")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let terminal = downloads.filter { $0.state != .downloading }
+        let capped = Array(terminal.prefix(Self.maxDownloadEntries))
+        try? JSONEncoder().encode(capped).write(to: url, options: [.atomic])
+    }
+
+    func loadDownloads() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "downloads.json")
+        guard let data = try? Data(contentsOf: url),
+              let entries = try? JSONDecoder().decode([DownloadItem].self, from: data) else { return }
+        downloads = entries
+    }
+
+    func clearCompletedDownloads() {
+        downloads.removeAll { $0.state != .downloading }
+        persistDownloads()
     }
 
     // MARK: - Auto-Archive
@@ -937,14 +1005,17 @@ final class BrowserStore {
             transientIDs.contains(tabID) ? nil : tabID
         }
 
+        let persistentFavorites = favoriteTabIDs.filter { !transientIDs.contains($0) }
+
         let snapshot = BrowserStateSnapshot(
-            schemaVersion: 1,
+            schemaVersion: 2,
             activeWorkspaceID: activeWorkspaceID,
             activeTabID: persistentActiveTabID,
             workspaces: persistentWorkspaces,
             tabs: persistentTabs,
             themes: themes,
-            tabGroups: persistentGroups
+            tabGroups: persistentGroups,
+            favoriteTabIDs: persistentFavorites
         )
         try? persistence.save(snapshot)
     }

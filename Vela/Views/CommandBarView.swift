@@ -102,8 +102,8 @@ struct CommandBarView: View {
 
     private var filteredActions: [CommandAction] {
         let allActions: [CommandAction] = [
-            CommandAction(id: "history", title: "Show History", icon: "clock") { [store] in
-                store.isHistoryVisible = true
+            CommandAction(id: "library", title: "Open Library", icon: "books.vertical") { [store] in
+                store.isLibraryVisible = true
             },
             CommandAction(id: "boosts", title: "Open Boost Editor", icon: "bolt") { [store] in
                 store.isBoostEditorVisible = true

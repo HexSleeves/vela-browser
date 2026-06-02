@@ -14,7 +14,7 @@ struct DownloadsView: View {
                 if !store.downloads.isEmpty {
                     Button("Clear") {
                         VelaAnimation.withMicro {
-                            store.downloads.removeAll { $0.state != .downloading }
+                            store.clearCompletedDownloads()
                         }
                     }
                     .buttonStyle(.plain)

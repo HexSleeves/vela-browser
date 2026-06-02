@@ -55,6 +55,7 @@ final class DownloadManager: NSObject, WKDownloadDelegate {
             store?.downloads[index].state = .completed
             store?.downloads[index].progress = 1.0
             downloadMap.removeValue(forKey: download)
+            store?.persistDownloads()
         }
     }
 
@@ -65,6 +66,7 @@ final class DownloadManager: NSObject, WKDownloadDelegate {
             store?.downloads[index].state = .failed
             store?.downloads[index].error = error.localizedDescription
             downloadMap.removeValue(forKey: download)
+            store?.persistDownloads()
         }
     }
 

@@ -7,7 +7,7 @@ enum DownloadState: String, Codable {
     case cancelled
 }
 
-struct DownloadItem: Identifiable, Equatable {
+struct DownloadItem: Identifiable, Codable, Equatable {
     let id: UUID
     var filename: String
     var url: URL

@@ -59,10 +59,10 @@ struct MainBrowserWindow: View {
         }
         .animation(VelaAnimation.emphasis, value: store.isCommandBarVisible)
         .sheet(isPresented: Binding(
-            get: { store.isHistoryVisible },
-            set: { store.isHistoryVisible = $0 }
+            get: { store.isLibraryVisible },
+            set: { store.isLibraryVisible = $0 }
         )) {
-            HistoryView()
+            LibraryView()
         }
         .sheet(isPresented: Binding(
             get: { store.isBoostEditorVisible },
@@ -148,7 +148,7 @@ struct MainBrowserWindow: View {
             addressText = store.activeTab?.url?.absoluteString ?? ""
 
         case .showHistory:
-            store.isHistoryVisible.toggle()
+            store.isLibraryVisible.toggle()
 
         case .toggleSplit:
             VelaAnimation.withLayout {

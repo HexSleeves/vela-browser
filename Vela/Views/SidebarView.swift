@@ -13,6 +13,9 @@ struct SidebarView: View {
                 spaceHeader
 
                 if !store.isSidebarCollapsed {
+                    FavoritesSectionView()
+                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
+
                     tabSections
                         .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
 
@@ -370,14 +373,6 @@ struct SidebarView: View {
                 Spacer()
 
                 Button {
-                    store.isHistoryVisible.toggle()
-                } label: {
-                    Image(systemName: "clock")
-                        .frame(width: 24, height: 24)
-                }
-                .help("History (⌘Y)")
-
-                Button {
                     store.isBoostEditorVisible.toggle()
                 } label: {
                     Image(systemName: "bolt")
@@ -386,10 +381,10 @@ struct SidebarView: View {
                 .help("Boosts")
 
                 Button {
-                    store.isDownloadsVisible.toggle()
+                    store.isLibraryVisible.toggle()
                 } label: {
                     ZStack(alignment: .topTrailing) {
-                        Image(systemName: "arrow.down.circle")
+                        Image(systemName: "books.vertical")
                             .frame(width: 24, height: 24)
                         if store.downloads.contains(where: { $0.state == .downloading }) {
                             Circle()
@@ -399,13 +394,7 @@ struct SidebarView: View {
                         }
                     }
                 }
-                .help("Downloads")
-                .popover(isPresented: Binding(
-                    get: { store.isDownloadsVisible },
-                    set: { store.isDownloadsVisible = $0 }
-                )) {
-                    DownloadsView()
-                }
+                .help("Library (⌘Y)")
             }
         }
         .buttonStyle(.borderless)
