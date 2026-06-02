@@ -40,7 +40,6 @@ final class WebViewPool: WebViewPooling {
 
     func webView(for tabID: BrowserTab.ID) -> WKWebView {
         if let existing = webViews[tabID] {
-            // Always re-apply UA in case this webView was created before the fix
             if existing.customUserAgent != userAgent {
                 existing.customUserAgent = userAgent
             }
@@ -48,12 +47,33 @@ final class WebViewPool: WebViewPooling {
         }
 
         let configuration = WKWebViewConfiguration()
-        configuration.websiteDataStore = store?.isPrivateTab(tabID) == true ? .nonPersistent() : .default()
+        configuration.websiteDataStore = dataStore(for: tabID)
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
         webView.customUserAgent = userAgent
         webViews[tabID] = webView
         return webView
+    }
+
+    private func dataStore(for tabID: BrowserTab.ID) -> WKWebsiteDataStore {
+        guard let store else { return .default() }
+
+        if store.isPrivateTab(tabID) {
+            return .nonPersistent()
+        }
+
+        // Find workspace containing this tab
+        guard let workspace = store.workspaces.first(where: { $0.tabIDs.contains(tabID) || $0.archivedTabIDs.contains(tabID) }) else {
+            return .default()
+        }
+
+        let profile = store.profileForWorkspace(workspace.id)
+
+        if let identifier = profile.dataStoreIdentifier {
+            return WKWebsiteDataStore(forIdentifier: identifier)
+        }
+
+        return .default()
     }
 
     func load(_ url: URL, in tabID: BrowserTab.ID) {

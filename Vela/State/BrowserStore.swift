@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import WebKit
 
 @MainActor
 @Observable
@@ -24,6 +25,7 @@ final class BrowserStore {
     var boosts: [Boost] = []
     var tabGroups: [TabGroup] = []
     var favoriteTabIDs: [BrowserTab.ID] = []
+    var profiles: [Profile] = [Profile.makeDefault()]
     var swipeIndicator: [BrowserTab.ID: SwipeDirection] = [:]
 
     enum TransientTabKind {
@@ -72,12 +74,13 @@ final class BrowserStore {
         let workspace = Workspace(name: "Personal", themeID: theme.id)
         return BrowserStore(
             snapshot: BrowserStateSnapshot(
-                schemaVersion: 1,
+                schemaVersion: 3,
                 activeWorkspaceID: workspace.id,
                 activeTabID: nil,
                 workspaces: [workspace],
                 tabs: [],
-                themes: BrowserTheme.builtIns
+                themes: BrowserTheme.builtIns,
+                profiles: [Profile.makeDefault()]
             ),
             persistence: persistence
         )
@@ -96,6 +99,7 @@ final class BrowserStore {
         self.activeTabID = snapshot.activeTabID
         self.tabGroups = snapshot.tabGroups
         self.favoriteTabIDs = snapshot.favoriteTabIDs
+        self.profiles = snapshot.profiles
         self.persistence = persistence
         self.navigationService = navigationService
         self.webViewPool = webViewPool
@@ -206,6 +210,19 @@ final class BrowserStore {
             return
         }
 
+        // Pinned tabs with designatedURL become stubs instead of closing
+        if let tab = tabs[tabID], tab.isPinned, tab.designatedURL != nil {
+            tabs[tabID]?.isStub = true
+            webViewPool.remove(tabID: tabID)
+            if activeTabID == tabID {
+                // Select next non-stub tab
+                let wsTabIDs = activeWorkspace?.tabIDs ?? []
+                activeTabID = wsTabIDs.first(where: { $0 != tabID && tabs[$0]?.isStub != true })
+            }
+            persist()
+            return
+        }
+
         // Save to recently closed before removing
         if let tab = tabs[tabID] {
             let wsID = workspaces.first(where: { $0.tabIDs.contains(tabID) })?.id ?? activeWorkspaceID
@@ -242,6 +259,16 @@ final class BrowserStore {
             return
         }
 
+        // Reactivate stub tabs
+        if tabs[tabID]?.isStub == true, let designatedURL = tabs[tabID]?.designatedURL {
+            tabs[tabID]?.isStub = false
+            tabs[tabID]?.lastAccessedAt = Date()
+            activeTabID = tabID
+            webViewPool.load(designatedURL, in: tabID)
+            persist()
+            return
+        }
+
         activeTabID = tabID
         tabs[tabID]?.lastAccessedAt = Date()
         persist()
@@ -254,6 +281,36 @@ final class BrowserStore {
 
         tabs[tabID]?.isPinned = isPinned
         persist()
+    }
+
+    // MARK: - Pinned Tab Designated URL
+
+    func setDesignatedURL(_ url: URL, for tabID: BrowserTab.ID) {
+        guard tabs[tabID] != nil else { return }
+        tabs[tabID]?.designatedURL = url
+        persist()
+    }
+
+    func clearDesignatedURL(for tabID: BrowserTab.ID) {
+        guard tabs[tabID] != nil else { return }
+        tabs[tabID]?.designatedURL = nil
+        tabs[tabID]?.isStub = false
+        persist()
+    }
+
+    func resetToDesignatedURL(_ tabID: BrowserTab.ID) {
+        guard let tab = tabs[tabID], let designatedURL = tab.designatedURL else { return }
+        tabs[tabID]?.isStub = false
+        tabs[tabID]?.url = designatedURL
+        tabs[tabID]?.title = designatedURL.host() ?? designatedURL.absoluteString
+        tabs[tabID]?.lastAccessedAt = Date()
+        webViewPool.load(designatedURL, in: tabID)
+        persist()
+    }
+
+    func isPinnedWithDesignatedURL(_ tabID: BrowserTab.ID) -> Bool {
+        guard let tab = tabs[tabID] else { return false }
+        return tab.isPinned && tab.designatedURL != nil
     }
 
     func setTheme(_ themeID: BrowserTheme.ID, for workspaceID: Workspace.ID) {
@@ -613,6 +670,74 @@ final class BrowserStore {
                   let wsID = workspaces.first(where: { $0.tabIDs.contains(id) })?.id else { return nil }
             return (tab: tab, workspaceID: wsID)
         }
+    }
+
+    // MARK: - Profiles
+
+    var defaultProfile: Profile {
+        profiles.first(where: { $0.dataStoreIdentifier == nil }) ?? profiles[0]
+    }
+
+    func profileForWorkspace(_ workspaceID: Workspace.ID) -> Profile {
+        guard let workspace = workspaces.first(where: { $0.id == workspaceID }),
+              let profileID = workspace.profileID,
+              let profile = profiles.first(where: { $0.id == profileID }) else {
+            return defaultProfile
+        }
+        return profile
+    }
+
+    func createProfile(name: String) {
+        let profile = Profile(name: name)
+        profiles.append(profile)
+        persist()
+    }
+
+    func renameProfile(_ profileID: Profile.ID, name: String) {
+        guard let index = profiles.firstIndex(where: { $0.id == profileID }) else { return }
+        profiles[index].name = name
+        persist()
+    }
+
+    func deleteProfile(_ profileID: Profile.ID) {
+        guard profiles.count > 1 else { return }
+        guard let profile = profiles.first(where: { $0.id == profileID }) else { return }
+        // Don't delete the default profile
+        guard profile.dataStoreIdentifier != nil else { return }
+
+        // Revert workspaces using this profile to default
+        for index in workspaces.indices {
+            if workspaces[index].profileID == profileID {
+                workspaces[index].profileID = nil
+            }
+        }
+
+        profiles.removeAll { $0.id == profileID }
+
+        // Remove the data store
+        if let identifier = profile.dataStoreIdentifier {
+            Task {
+                try? await WKWebsiteDataStore.remove(forIdentifier: identifier)
+            }
+        }
+
+        persist()
+    }
+
+    func assignProfile(_ profileID: Profile.ID?, to workspaceID: Workspace.ID) {
+        guard let index = workspaces.firstIndex(where: { $0.id == workspaceID }) else { return }
+        let oldProfileID = workspaces[index].profileID
+        workspaces[index].profileID = profileID
+
+        // If profile changed, need to recreate web views for tabs in this workspace
+        if oldProfileID != profileID {
+            let tabIDs = workspaces[index].tabIDs
+            for tabID in tabIDs {
+                webViewPool.remove(tabID: tabID)
+            }
+        }
+
+        persist()
     }
 
     // MARK: - Downloads
@@ -1008,14 +1133,15 @@ final class BrowserStore {
         let persistentFavorites = favoriteTabIDs.filter { !transientIDs.contains($0) }
 
         let snapshot = BrowserStateSnapshot(
-            schemaVersion: 2,
+            schemaVersion: 3,
             activeWorkspaceID: activeWorkspaceID,
             activeTabID: persistentActiveTabID,
             workspaces: persistentWorkspaces,
             tabs: persistentTabs,
             themes: themes,
             tabGroups: persistentGroups,
-            favoriteTabIDs: persistentFavorites
+            favoriteTabIDs: persistentFavorites,
+            profiles: profiles
         )
         try? persistence.save(snapshot)
     }

@@ -8,7 +8,7 @@ struct SettingsView: View {
     @AppStorage("archiveThresholdDays") private var archiveThresholdDays: Int = 7
 
     private enum Tab: String {
-        case general, appearance, about
+        case general, appearance, profiles, about
     }
 
     @State private var selectedTab: Tab = .general
@@ -27,13 +27,19 @@ struct SettingsView: View {
                 }
                 .tag(Tab.appearance)
 
+            profilesTab
+                .tabItem {
+                    Label("Profiles", systemImage: "person.2")
+                }
+                .tag(Tab.profiles)
+
             aboutTab
                 .tabItem {
                     Label("About", systemImage: "info.circle")
                 }
                 .tag(Tab.about)
         }
-        .frame(width: 480, height: 320)
+        .frame(width: 480, height: 380)
     }
 
     // MARK: - General
@@ -97,6 +103,106 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    // MARK: - Profiles
+
+    private var profilesTab: some View {
+        Form {
+            Section("Browsing Profiles") {
+                ForEach(store.profiles) { profile in
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(profile.name)
+                                .font(.body)
+                            if profile.dataStoreIdentifier == nil {
+                                Text("Default — shared with existing data")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text("Isolated cookies, cache & logins")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        Spacer()
+
+                        let wsCount = store.workspaces.filter { $0.profileID == profile.id || ($0.profileID == nil && profile.dataStoreIdentifier == nil) }.count
+                        Text("\(wsCount) workspace\(wsCount == 1 ? "" : "s")")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+
+                        Button("Rename") {
+                            promptRenameProfile(profile)
+                        }
+                        .buttonStyle(.plain)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                        if profile.dataStoreIdentifier != nil {
+                            Button("Delete", role: .destructive) {
+                                VelaAnimation.withMicro {
+                                    store.deleteProfile(profile.id)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                        }
+                    }
+                }
+
+                Button("New Profile…") {
+                    promptCreateProfile()
+                }
+            }
+
+            Section {
+                Text("Each profile has isolated cookies, cache, and login sessions. Assign profiles to workspaces to keep browsing contexts separate.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
+
+    private func promptCreateProfile() {
+        let alert = NSAlert()
+        alert.messageText = "New Profile"
+        alert.informativeText = "Enter a name for this profile:"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        field.placeholderString = "Profile name"
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Create")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        if alert.runModal() == .alertFirstButtonReturn {
+            let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+            if !name.isEmpty {
+                VelaAnimation.withMicro {
+                    store.createProfile(name: name)
+                }
+            }
+        }
+    }
+
+    private func promptRenameProfile(_ profile: Profile) {
+        let alert = NSAlert()
+        alert.messageText = "Rename Profile"
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 200, height: 24))
+        field.stringValue = profile.name
+        alert.accessoryView = field
+        alert.addButton(withTitle: "Rename")
+        alert.addButton(withTitle: "Cancel")
+        alert.window.initialFirstResponder = field
+        if alert.runModal() == .alertFirstButtonReturn {
+            let name = field.stringValue.trimmingCharacters(in: .whitespaces)
+            if !name.isEmpty {
+                store.renameProfile(profile.id, name: name)
+            }
+        }
     }
 
     // MARK: - About
@@ -209,7 +315,14 @@ private struct ClearDataView: View {
         }
 
         if !dataTypes.isEmpty {
-            WKWebsiteDataStore.default().removeData(
+            let profile = store.profileForWorkspace(store.activeWorkspaceID)
+            let dataStore: WKWebsiteDataStore
+            if let identifier = profile.dataStoreIdentifier {
+                dataStore = WKWebsiteDataStore(forIdentifier: identifier)
+            } else {
+                dataStore = .default()
+            }
+            dataStore.removeData(
                 ofTypes: dataTypes,
                 modifiedSince: .distantPast
             ) {}

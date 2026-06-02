@@ -87,6 +87,7 @@ struct TabRowView: View {
             }
             .animation(VelaAnimation.micro, value: isHovered)
             .animation(VelaAnimation.micro, value: isDragging)
+            .opacity(tab.isStub ? 0.45 : 1.0)
         }
         .buttonStyle(.plain)
         .onHover { hovering in
@@ -98,6 +99,23 @@ struct TabRowView: View {
             Button(tab.isPinned ? "Unpin Tab" : "Pin Tab") {
                 store.setPinned(tab.id, isPinned: !tab.isPinned)
             }
+
+            if tab.isPinned {
+                if tab.designatedURL != nil {
+                    Button("Reset to Designated URL") {
+                        store.resetToDesignatedURL(tab.id)
+                    }
+                    Button("Clear Designated URL") {
+                        store.clearDesignatedURL(for: tab.id)
+                    }
+                } else if let url = tab.url {
+                    Button("Set as Designated URL") {
+                        store.setDesignatedURL(url, for: tab.id)
+                    }
+                }
+            }
+
+            Divider()
 
             if store.isFavorite(tab.id) {
                 Button("Remove from Favorites") {

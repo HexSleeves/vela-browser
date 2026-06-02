@@ -87,6 +87,20 @@ struct BrowserWebView: NSViewRepresentable {
         // MARK: - WKNavigationDelegate
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+            // Intercept link clicks in pinned tabs with designated URLs
+            if navigationAction.navigationType == .linkActivated,
+               let url = navigationAction.request.url,
+               let store = self.store,
+               store.isPinnedWithDesignatedURL(tabID) {
+                Task { @MainActor in
+                    VelaAnimation.withEmphasis {
+                        store.createTab(url: url)
+                    }
+                }
+                return .cancel
+            }
+
+            // Existing swipe indicator logic
             if navigationAction.navigationType == .backForward,
                let url = navigationAction.request.url {
                 if webView.backForwardList.backItem?.url == url {

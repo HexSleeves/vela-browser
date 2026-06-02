@@ -91,9 +91,18 @@ struct SidebarView: View {
                             .background(.thinMaterial, in: Circle())
 
                         if !store.isSidebarCollapsed {
-                            Text(workspace.name)
-                                .lineLimit(1)
-                                .transition(.opacity)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(workspace.name)
+                                    .lineLimit(1)
+                                let profile = store.profileForWorkspace(workspace.id)
+                                if profile.dataStoreIdentifier != nil {
+                                    Text(profile.name)
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .transition(.opacity)
                             Spacer()
                         }
                     }
@@ -116,6 +125,25 @@ struct SidebarView: View {
                             let newName = field.stringValue.trimmingCharacters(in: .whitespaces)
                             if !newName.isEmpty {
                                 store.renameWorkspace(workspace.id, name: newName)
+                            }
+                        }
+                    }
+
+                    if store.profiles.count > 1 {
+                        Menu("Assign Profile") {
+                            ForEach(store.profiles) { profile in
+                                Button {
+                                    VelaAnimation.withMicro {
+                                        store.assignProfile(profile.id, to: workspace.id)
+                                    }
+                                } label: {
+                                    HStack {
+                                        Text(profile.name)
+                                        if store.profileForWorkspace(workspace.id).id == profile.id {
+                                            Image(systemName: "checkmark")
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

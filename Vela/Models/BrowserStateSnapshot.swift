@@ -9,9 +9,10 @@ struct BrowserStateSnapshot: Codable, Equatable {
     var themes: [BrowserTheme]
     var tabGroups: [TabGroup]
     var favoriteTabIDs: [BrowserTab.ID]
+    var profiles: [Profile]
 
     enum CodingKeys: String, CodingKey {
-        case schemaVersion, activeWorkspaceID, activeTabID, workspaces, tabs, themes, tabGroups, favoriteTabIDs
+        case schemaVersion, activeWorkspaceID, activeTabID, workspaces, tabs, themes, tabGroups, favoriteTabIDs, profiles
     }
 
     init(from decoder: Decoder) throws {
@@ -24,6 +25,7 @@ struct BrowserStateSnapshot: Codable, Equatable {
         themes = try container.decode([BrowserTheme].self, forKey: .themes)
         tabGroups = try container.decodeIfPresent([TabGroup].self, forKey: .tabGroups) ?? []
         favoriteTabIDs = try container.decodeIfPresent([BrowserTab.ID].self, forKey: .favoriteTabIDs) ?? []
+        profiles = try container.decodeIfPresent([Profile].self, forKey: .profiles) ?? [Profile.makeDefault()]
     }
 
     init(
@@ -34,7 +36,8 @@ struct BrowserStateSnapshot: Codable, Equatable {
         tabs: [BrowserTab],
         themes: [BrowserTheme],
         tabGroups: [TabGroup] = [],
-        favoriteTabIDs: [BrowserTab.ID] = []
+        favoriteTabIDs: [BrowserTab.ID] = [],
+        profiles: [Profile] = [Profile.makeDefault()]
     ) {
         self.schemaVersion = schemaVersion
         self.activeWorkspaceID = activeWorkspaceID
@@ -44,5 +47,6 @@ struct BrowserStateSnapshot: Codable, Equatable {
         self.themes = themes
         self.tabGroups = tabGroups
         self.favoriteTabIDs = favoriteTabIDs
+        self.profiles = profiles
     }
 }
