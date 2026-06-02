@@ -17,6 +17,7 @@ struct BrowserWebView: NSViewRepresentable {
         let webView = pool.webView(for: tabID)
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
+        context.coordinator.installPeekHandler(on: webView)
         context.coordinator.observe(webView)
         return webView
     }
@@ -28,7 +29,7 @@ struct BrowserWebView: NSViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
+    final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate, WKScriptMessageHandler {
         let tabID: BrowserTab.ID
         weak var store: BrowserStore?
 
@@ -37,10 +38,48 @@ struct BrowserWebView: NSViewRepresentable {
         private var canGoForwardObservation: NSKeyValueObservation?
         private var urlObservation: NSKeyValueObservation?
         private var titleObservation: NSKeyValueObservation?
+        private var peekDelayTask: Task<Void, Never>?
+        private var peekHandlerInstalled = false
 
         init(tabID: BrowserTab.ID, store: BrowserStore) {
             self.tabID = tabID
             self.store = store
+        }
+
+        // MARK: - Peek JS Injection
+
+        func installPeekHandler(on webView: WKWebView) {
+            guard !peekHandlerInstalled else { return }
+            peekHandlerInstalled = true
+            webView.configuration.userContentController.add(self, name: "velaPeek")
+        }
+
+        nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+            Task { @MainActor in
+                guard let body = message.body as? [String: String],
+                      let type = body["type"] else { return }
+
+                if type == "hover", let urlString = body["url"],
+                   let url = URL(string: urlString) {
+                    self.peekDelayTask?.cancel()
+                    self.peekDelayTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(300))
+                        guard !Task.isCancelled else { return }
+                        self.store?.peekURL = url
+                        VelaAnimation.withEmphasis {
+                            self.store?.isPeekVisible = true
+                        }
+                    }
+                } else if type == "leave" {
+                    self.peekDelayTask?.cancel()
+                    if self.store?.isPeekVisible == true {
+                        VelaAnimation.withEmphasis {
+                            self.store?.isPeekVisible = false
+                            self.store?.peekURL = nil
+                        }
+                    }
+                }
+            }
         }
 
         // MARK: - KVO Observations
@@ -124,7 +163,30 @@ struct BrowserWebView: NSViewRepresentable {
             Task { @MainActor in
                 store?.updateTab(tabID, title: webView.title, url: webView.url, isLoading: false, estimatedProgress: 1.0)
                 store?.updateNavState(tabID, canGoBack: webView.canGoBack, canGoForward: webView.canGoForward)
+                self.injectPeekScript(webView)
             }
+        }
+
+        private func injectPeekScript(_ webView: WKWebView) {
+            let js = """
+            (function() {
+                if (window.__velaPeekInstalled) return;
+                window.__velaPeekInstalled = true;
+                document.addEventListener('mouseover', function(e) {
+                    var a = e.target.closest('a[href]');
+                    if (a && a.href && a.href.startsWith('http')) {
+                        window.webkit.messageHandlers.velaPeek.postMessage({type: 'hover', url: a.href});
+                    }
+                });
+                document.addEventListener('mouseout', function(e) {
+                    var a = e.target.closest('a[href]');
+                    if (a) {
+                        window.webkit.messageHandlers.velaPeek.postMessage({type: 'leave'});
+                    }
+                });
+            })();
+            """
+            webView.evaluateJavaScript(js) { _, _ in }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

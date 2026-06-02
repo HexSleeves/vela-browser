@@ -105,7 +105,30 @@ struct BrowserSurfaceView: View {
                         .transition(.opacity.combined(with: .scale(scale: 0.86)))
                 }
             }
+            .overlay(alignment: .bottomTrailing) {
+                if store.isPeekVisible, let peekURL = store.peekURL {
+                    PeekPreviewView(
+                        url: peekURL,
+                        onOpen: {
+                            VelaAnimation.withEmphasis {
+                                store.createTab(url: peekURL)
+                                store.isPeekVisible = false
+                                store.peekURL = nil
+                            }
+                        },
+                        onDismiss: {
+                            VelaAnimation.withEmphasis {
+                                store.isPeekVisible = false
+                                store.peekURL = nil
+                            }
+                        }
+                    )
+                    .padding(16)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .bottomTrailing)))
+                }
+            }
             .animation(VelaAnimation.emphasis, value: store.swipeIndicator[tabID] != nil)
+            .animation(VelaAnimation.emphasis, value: store.isPeekVisible)
     }
 
     private func swipeIndicator(_ direction: BrowserStore.SwipeDirection) -> some View {

@@ -27,6 +27,8 @@ final class BrowserStore {
     var favoriteTabIDs: [BrowserTab.ID] = []
     var profiles: [Profile] = [Profile.makeDefault()]
     var swipeIndicator: [BrowserTab.ID: SwipeDirection] = [:]
+    var peekURL: URL?
+    var isPeekVisible = false
 
     enum TransientTabKind {
         case littleVela
@@ -155,6 +157,17 @@ final class BrowserStore {
 
     func isPrivateTab(_ tabID: BrowserTab.ID) -> Bool {
         transientTabs[tabID] == .privateBrowsing
+    }
+
+    func promoteTransientTab(_ tabID: BrowserTab.ID, to workspaceID: Workspace.ID) {
+        guard transientTabs[tabID] != nil,
+              tabs[tabID] != nil,
+              let wsIndex = workspaces.firstIndex(where: { $0.id == workspaceID }) else { return }
+        transientTabs.removeValue(forKey: tabID)
+        workspaces[wsIndex].tabIDs.append(tabID)
+        activeWorkspaceID = workspaceID
+        activeTabID = tabID
+        persist()
     }
 
     func showSwipeIndicator(_ direction: SwipeDirection, for tabID: BrowserTab.ID) {

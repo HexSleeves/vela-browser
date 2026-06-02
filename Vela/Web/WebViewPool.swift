@@ -25,8 +25,8 @@ final class WebViewPool: WebViewPooling {
     weak var store: BrowserStore?
 
     init() {
-        // Clear stale website data once to ensure UA change takes effect
-        let key = "uaClearedV2"
+        // Clear stale website data once to ensure UA changes take effect.
+        let key = "uaClearedV3"
         if !UserDefaults.standard.bool(forKey: key) {
             WKWebsiteDataStore.default().removeData(
                 ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(),
@@ -36,7 +36,7 @@ final class WebViewPool: WebViewPooling {
         }
     }
 
-    private let userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+    private let userAgent = BrowserUserAgent.safariCompatibleMac
 
     func webView(for tabID: BrowserTab.ID) -> WKWebView {
         if let existing = webViews[tabID] {

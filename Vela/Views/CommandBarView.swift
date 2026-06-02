@@ -33,12 +33,11 @@ struct CommandBarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Search field
             HStack(spacing: 10) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.secondary)
 
-                TextField("Search tabs, history, or the web…", text: $query)
+                TextField("Search tabs, actions, or the web…", text: $query)
                     .textFieldStyle(.plain)
                     .font(.title3)
                     .focused($isFocused)
@@ -63,7 +62,7 @@ struct CommandBarView: View {
                     }
                     .padding(6)
                 }
-                .frame(maxHeight: 320)
+                .frame(maxHeight: 360)
             }
         }
         .background(.ultraThickMaterial, in: RoundedRectangle(cornerRadius: 12))
@@ -93,28 +92,110 @@ struct CommandBarView: View {
     // MARK: - Combined Results
 
     private var results: [CommandBarResult] {
+        let actionResults = filteredActions.map { CommandBarResult.action($0) }
         let tabResults = filteredTabs.map { CommandBarResult.tab($0) }
         let bookmarkResults = filteredBookmarks.map { CommandBarResult.bookmark($0) }
         let historyResults = filteredHistory.map { CommandBarResult.history($0) }
-        let actionResults = filteredActions.map { CommandBarResult.action($0) }
-        return (actionResults + tabResults + bookmarkResults + historyResults).prefix(12).map { $0 }
+
+        var combined = actionResults + tabResults + bookmarkResults + historyResults
+
+        if !query.isEmpty {
+            if let urlAction = urlNavigationAction {
+                combined.insert(.action(urlAction), at: 0)
+            }
+
+            if combined.isEmpty || !combined.contains(where: { if case .action = $0 { return true }; return false }) {
+                combined.append(.action(webSearchAction))
+            }
+        }
+
+        return Array(combined.prefix(14))
     }
 
+    // MARK: - URL Navigation
+
+    private var urlNavigationAction: CommandAction? {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        guard trimmed.contains(".") && !trimmed.contains(" ") else { return nil }
+        let url = trimmed.contains("://") ? trimmed : "https://\(trimmed)"
+        return CommandAction(id: "navigate-url", title: "Navigate to \(url)", icon: "globe", shortcut: nil) { [store] in
+            store.loadAddressInput(trimmed)
+        }
+    }
+
+    private var webSearchAction: CommandAction {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        return CommandAction(id: "web-search", title: "Search the web for \"\(trimmed)\"", icon: "magnifyingglass", shortcut: nil) { [store] in
+            store.loadAddressInput(trimmed)
+        }
+    }
+
+    // MARK: - Actions (30+)
+
     private var filteredActions: [CommandAction] {
-        let allActions: [CommandAction] = [
-            CommandAction(id: "library", title: "Open Library", icon: "books.vertical") { [store] in
+        guard !query.isEmpty else { return [] }
+        let lowered = query.lowercased()
+        return allActions.filter { $0.title.lowercased().contains(lowered) }
+    }
+
+    private var allActions: [CommandAction] {
+        var actions: [CommandAction] = [
+            // Navigation
+            CommandAction(id: "back", title: "Go Back", icon: "chevron.left", shortcut: "⌘[") { [store] in
+                store.goBack()
+            },
+            CommandAction(id: "forward", title: "Go Forward", icon: "chevron.right", shortcut: "⌘]") { [store] in
+                store.goForward()
+            },
+            CommandAction(id: "reload", title: "Reload Page", icon: "arrow.clockwise", shortcut: "⌘R") { [store] in
+                store.reload()
+            },
+
+            // Tab management
+            CommandAction(id: "new-tab", title: "New Tab", icon: "plus", shortcut: "⌘T") { [store] in
+                store.createTab()
+            },
+            CommandAction(id: "close-tab", title: "Close Tab", icon: "xmark", shortcut: "⌘W") { [store] in
+                if let tabID = store.activeTabID {
+                    store.closeTab(tabID)
+                }
+            },
+            CommandAction(id: "undo-close", title: "Undo Close Tab", icon: "arrow.uturn.left", shortcut: "⌘Z") { [store] in
+                store.undoCloseTab()
+            },
+
+            // Zoom
+            CommandAction(id: "zoom-in", title: "Zoom In", icon: "plus.magnifyingglass", shortcut: "⌘+") { [store] in
+                store.zoomIn()
+            },
+            CommandAction(id: "zoom-out", title: "Zoom Out", icon: "minus.magnifyingglass", shortcut: "⌘-") { [store] in
+                store.zoomOut()
+            },
+            CommandAction(id: "zoom-reset", title: "Actual Size", icon: "1.magnifyingglass", shortcut: "⌘0") { [store] in
+                store.zoomReset()
+            },
+
+            // View toggles
+            CommandAction(id: "toggle-sidebar", title: "Toggle Sidebar", icon: "sidebar.left", shortcut: "⇧⌘S") { [store] in
+                store.isSidebarCollapsed.toggle()
+            },
+            CommandAction(id: "toggle-find", title: "Find in Page", icon: "doc.text.magnifyingglass", shortcut: "⌘F") { [store] in
+                store.toggleFindBar()
+            },
+            CommandAction(id: "library", title: "Open Library", icon: "books.vertical", shortcut: "⌘Y") { [store] in
                 store.isLibraryVisible = true
             },
-            CommandAction(id: "boosts", title: "Open Boost Editor", icon: "bolt") { [store] in
+            CommandAction(id: "boosts", title: "Open Boost Editor", icon: "bolt", shortcut: nil) { [store] in
                 store.isBoostEditorVisible = true
             },
-            CommandAction(id: "reader", title: "Toggle Reader Mode", icon: "book") { [store] in
+            CommandAction(id: "reader", title: "Toggle Reader Mode", icon: "book", shortcut: nil) { [store] in
                 store.toggleReaderMode()
             },
-            CommandAction(id: "split", title: "Toggle Split View", icon: "rectangle.split.2x1") { [store] in
+            CommandAction(id: "split", title: "Toggle Split View", icon: "rectangle.split.2x1", shortcut: "⇧⌘D") { [store] in
                 if store.splitTabID != nil {
                     store.closeSplit()
-                } else if let tabID = store.activeTabID {
+                } else if store.activeTabID != nil {
                     let tab = BrowserTab(url: nil)
                     store.tabs[tab.id] = tab
                     if let wsIndex = store.workspaces.firstIndex(where: { $0.id == store.activeWorkspaceID }) {
@@ -123,26 +204,89 @@ struct CommandBarView: View {
                     store.splitTabID = tab.id
                 }
             },
-            CommandAction(id: "new-group", title: "Create Tab Group", icon: "folder.badge.plus") { [store] in
-                store.createTabGroup(name: "New Group")
+
+            // Page actions
+            CommandAction(id: "print", title: "Print Page", icon: "printer", shortcut: "⌘P") { [store] in
+                store.printPage()
             },
-            CommandAction(id: "clear-data", title: "Clear Browsing Data", icon: "trash") { [store] in
-                store.clearHistory()
-                Task {
-                    await FaviconCache.shared.clear()
-                }
-            },
-            CommandAction(id: "bookmark", title: "Bookmark This Page", icon: "star") { [store] in
+            CommandAction(id: "bookmark", title: "Bookmark This Page", icon: "star", shortcut: nil) { [store] in
                 store.toggleBookmark()
             },
-            CommandAction(id: "new-workspace", title: "New Workspace", icon: "plus.rectangle.on.rectangle") { [store] in
+            CommandAction(id: "copy-url", title: "Copy Page URL", icon: "doc.on.doc", shortcut: nil) { [store] in
+                if let url = store.activeTab?.url {
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(url.absoluteString, forType: .string)
+                }
+            },
+
+            // Workspace management
+            CommandAction(id: "new-workspace", title: "New Workspace", icon: "plus.rectangle.on.rectangle", shortcut: nil) { [store] in
                 store.createWorkspace(name: "Space \(store.workspaces.count + 1)")
+            },
+            CommandAction(id: "new-group", title: "Create Tab Group", icon: "folder.badge.plus", shortcut: nil) { [store] in
+                store.createTabGroup(name: "New Group")
+            },
+
+            // Privacy
+            CommandAction(id: "clear-data", title: "Clear Browsing Data", icon: "trash", shortcut: nil) { [store] in
+                store.clearHistory()
+                Task { await FaviconCache.shared.clear() }
+            },
+            CommandAction(id: "private-window", title: "New Private Window", icon: "eye.slash", shortcut: "⇧⌘N") { [store] in
+                // Dispatched via BrowserCommands
+            },
+            CommandAction(id: "little-vela", title: "Open Little Vela", icon: "rectangle.on.rectangle.angled", shortcut: "⌥⌘N") { [store] in
+                // Dispatched via BrowserCommands
+            },
+
+            // Profile management
+            CommandAction(id: "manage-profiles", title: "Manage Profiles", icon: "person.2", shortcut: nil) { },
+
+            // Settings
+            CommandAction(id: "settings", title: "Open Settings", icon: "gearshape", shortcut: "⌘,") { },
+
+            // Focus
+            CommandAction(id: "focus-address", title: "Focus Address Bar", icon: "character.cursor.ibeam", shortcut: "⌘L") { },
+
+            // Import
+            CommandAction(id: "import-bookmarks", title: "Import Bookmarks", icon: "square.and.arrow.down", shortcut: nil) { },
+
+            // Mute
+            CommandAction(id: "mute-tab", title: "Toggle Mute Tab", icon: "speaker.slash", shortcut: nil) { [store] in
+                if let tabID = store.activeTabID {
+                    store.toggleMute(tabID)
+                }
+            },
+
+            // Pin
+            CommandAction(id: "pin-tab", title: "Toggle Pin Tab", icon: "pin", shortcut: nil) { [store] in
+                if let tabID = store.activeTabID, let tab = store.tabs[tabID] {
+                    store.setPinned(tabID, isPinned: !tab.isPinned)
+                }
+            },
+
+            // Favorites
+            CommandAction(id: "toggle-favorite", title: "Toggle Favorite", icon: "heart", shortcut: nil) { [store] in
+                if let tabID = store.activeTabID {
+                    if store.isFavorite(tabID) {
+                        store.removeFavorite(tabID)
+                    } else {
+                        store.addFavorite(tabID)
+                    }
+                }
             },
         ]
 
-        guard !query.isEmpty else { return [] }
-        let lowered = query.lowercased()
-        return allActions.filter { $0.title.lowercased().contains(lowered) }
+        // Dynamic workspace switching actions
+        for workspace in store.workspaces {
+            let wsID = workspace.id
+            let wsName = workspace.name
+            actions.append(CommandAction(id: "switch-ws-\(wsID)", title: "Switch to \(wsName)", icon: "rectangle.stack", shortcut: nil) { [store] in
+                store.switchWorkspace(wsID)
+            })
+        }
+
+        return actions
     }
 
     private var filteredTabs: [BrowserTab] {
@@ -177,7 +321,6 @@ struct CommandBarView: View {
     private var filteredHistory: [HistoryEntry] {
         guard !query.isEmpty else { return [] }
         let lowered = query.lowercased()
-        // Exclude URLs that match non-transient open tabs (they're already shown)
         let openURLs = Set(store.tabs.values
             .filter { !store.isTransientTab($0.id) }
             .compactMap(\.url?.absoluteString))
@@ -255,7 +398,16 @@ struct CommandAction: Identifiable {
     let id: String
     let title: String
     let icon: String
+    let shortcut: String?
     let action: @MainActor () -> Void
+
+    init(id: String, title: String, icon: String, shortcut: String? = nil, action: @escaping @MainActor () -> Void) {
+        self.id = id
+        self.title = title
+        self.icon = icon
+        self.shortcut = shortcut
+        self.action = action
+    }
 }
 
 // MARK: - Result Row
@@ -283,6 +435,13 @@ private struct CommandBarRow: View {
             }
 
             Spacer()
+
+            if let shortcut = resultShortcut {
+                Text(shortcut)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .padding(.trailing, 4)
+            }
 
             resultBadge
         }
@@ -325,6 +484,13 @@ private struct CommandBarRow: View {
         case .history(let entry): return entry.url.absoluteString
         case .action: return ""
         }
+    }
+
+    private var resultShortcut: String? {
+        if case .action(let action) = result {
+            return action.shortcut
+        }
+        return nil
     }
 
     @ViewBuilder

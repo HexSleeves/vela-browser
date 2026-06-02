@@ -41,6 +41,17 @@ struct LittleVelaView: View {
                     .padding(.vertical, 6)
                     .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
 
+                if littleTabID != nil {
+                    Button {
+                        promoteToMainWindow()
+                    } label: {
+                        Image(systemName: "arrow.up.forward.square")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open in Main Window")
+                }
+
                 // Close
                 Button {
                     cleanupLittleTab()
@@ -116,5 +127,14 @@ struct LittleVelaView: View {
     private func goForward() {
         guard let tabID = littleTabID else { return }
         store.webViewPool.goForward(tabID: tabID)
+    }
+
+    private func promoteToMainWindow() {
+        guard let tabID = littleTabID else { return }
+        VelaAnimation.withEmphasis {
+            store.promoteTransientTab(tabID, to: store.activeWorkspaceID)
+        }
+        littleTabID = nil
+        dismiss()
     }
 }
