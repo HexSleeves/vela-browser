@@ -29,6 +29,10 @@ final class BrowserStore {
     var swipeIndicator: [BrowserTab.ID: SwipeDirection] = [:]
     var peekURL: URL?
     var isPeekVisible = false
+    var isZapModeActive = false
+    @ObservationIgnored var contentBlocker = ContentBlockerService()
+    var contentBlockingExceptions: Set<String> = []
+    var blockedRequestCount: [BrowserTab.ID: Int] = [:]
 
     enum TransientTabKind {
         case littleVela
@@ -68,6 +72,8 @@ final class BrowserStore {
             store.loadBookmarks()
             store.loadBoosts()
             store.loadDownloads()
+            store.loadRoutingRules()
+            store.initContentBlocking()
             store.archiveStaleTabsIfNeeded()
             return store
         }
@@ -333,6 +339,34 @@ final class BrowserStore {
         }
 
         workspaces[index].themeID = themeID
+        persist()
+    }
+
+    // MARK: - Theme CRUD
+
+    func createTheme(name: String, primary: BrowserTheme.Stop, secondary: BrowserTheme.Stop, accent: BrowserTheme.Stop) {
+        let theme = BrowserTheme(name: name, primary: primary, secondary: secondary, accent: accent)
+        themes.append(theme)
+        persist()
+    }
+
+    func editTheme(_ themeID: BrowserTheme.ID, name: String, primary: BrowserTheme.Stop, secondary: BrowserTheme.Stop, accent: BrowserTheme.Stop) {
+        guard let index = themes.firstIndex(where: { $0.id == themeID }), !themes[index].isBuiltIn else { return }
+        themes[index].name = name
+        themes[index].primary = primary
+        themes[index].secondary = secondary
+        themes[index].accent = accent
+        persist()
+    }
+
+    func deleteTheme(_ themeID: BrowserTheme.ID) {
+        guard let theme = themes.first(where: { $0.id == themeID }), !theme.isBuiltIn else { return }
+        for index in workspaces.indices {
+            if workspaces[index].themeID == themeID {
+                workspaces[index].themeID = BrowserTheme.builtIns[0].id
+            }
+        }
+        themes.removeAll { $0.id == themeID }
         persist()
     }
 
@@ -751,6 +785,175 @@ final class BrowserStore {
         }
 
         persist()
+    }
+
+    // MARK: - Zap Mode
+
+    func toggleZapMode() {
+        isZapModeActive.toggle()
+        guard let tabID = activeTabID else { return }
+        if isZapModeActive {
+            let injectJS = """
+            (function() {
+                if (window.__velaZapActive) return;
+                window.__velaZapActive = true;
+                var overlay = null;
+                document.addEventListener('mouseover', function(e) {
+                    if (overlay) overlay.remove();
+                    var el = e.target;
+                    var rect = el.getBoundingClientRect();
+                    overlay = document.createElement('div');
+                    overlay.id = '__velaZapOverlay';
+                    overlay.style.cssText = 'position:fixed;top:'+rect.top+'px;left:'+rect.left+'px;width:'+rect.width+'px;height:'+rect.height+'px;background:rgba(255,0,0,0.2);border:2px solid red;pointer-events:none;z-index:999999;';
+                    document.body.appendChild(overlay);
+                }, true);
+                document.addEventListener('click', function(e) {
+                    if (!window.__velaZapActive) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var el = e.target;
+                    var selector = '';
+                    if (el.id) { selector = '#' + el.id; }
+                    else {
+                        var path = [];
+                        while (el && el !== document.body) {
+                            var tag = el.tagName.toLowerCase();
+                            if (el.className && typeof el.className === 'string') {
+                                var cls = el.className.trim().split(/\\s+/).filter(function(c){return c.length > 0 && c.length < 40;}).slice(0,2).join('.');
+                                if (cls) tag += '.' + cls;
+                            }
+                            path.unshift(tag);
+                            el = el.parentElement;
+                        }
+                        selector = path.join(' > ');
+                    }
+                    window.webkit.messageHandlers.velaZap.postMessage(selector);
+                }, true);
+            })()
+            """
+            if let pool = webViewPool as? WebViewPool {
+                pool.webView(for: tabID).evaluateJavaScript(injectJS) { _, _ in }
+            }
+        } else {
+            let cleanupJS = """
+            window.__velaZapActive = false;
+            var overlay = document.getElementById('__velaZapOverlay');
+            if (overlay) overlay.remove();
+            """
+            if let pool = webViewPool as? WebViewPool {
+                pool.webView(for: tabID).evaluateJavaScript(cleanupJS) { _, _ in }
+            }
+        }
+    }
+
+    func createZapBoost(selector: String) {
+        guard let host = activeTab?.url?.host() else { return }
+        isZapModeActive = false
+        let css = "\(selector) { display: none !important; }"
+        if let existingIndex = boosts.firstIndex(where: { $0.hostPattern == host }) {
+            boosts[existingIndex].css += "\n\(css)"
+            persistBoosts()
+        } else {
+            addBoost(Boost(hostPattern: host, css: css))
+        }
+        if let tabID = activeTabID, let pool = webViewPool as? WebViewPool {
+            let cleanupJS = "window.__velaZapActive = false; var o = document.getElementById('__velaZapOverlay'); if(o) o.remove();"
+            pool.webView(for: tabID).evaluateJavaScript(cleanupJS) { _, _ in }
+        }
+    }
+
+    // MARK: - Content Blocking
+
+    func initContentBlocking() {
+        let isEnabled = UserDefaults.standard.object(forKey: "contentBlockingEnabled") as? Bool ?? true
+        guard isEnabled else { return }
+        loadContentBlockingExceptions()
+        Task {
+            await contentBlocker.compileDefaultList()
+            await contentBlocker.compileExceptionList(hosts: contentBlockingExceptions)
+        }
+    }
+
+    func toggleContentBlockingException(host: String) {
+        if contentBlockingExceptions.contains(host) {
+            contentBlockingExceptions.remove(host)
+        } else {
+            contentBlockingExceptions.insert(host)
+        }
+        persistContentBlockingExceptions()
+        Task { await contentBlocker.compileExceptionList(hosts: contentBlockingExceptions) }
+    }
+
+    func isContentBlockingDisabled(for host: String) -> Bool {
+        contentBlockingExceptions.contains(host)
+    }
+
+    private func persistContentBlockingExceptions() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "content-blocking-exceptions.json")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? JSONEncoder().encode(Array(contentBlockingExceptions)).write(to: url, options: [.atomic])
+    }
+
+    private func loadContentBlockingExceptions() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "content-blocking-exceptions.json")
+        guard let data = try? Data(contentsOf: url),
+              let hosts = try? JSONDecoder().decode([String].self, from: data) else { return }
+        contentBlockingExceptions = Set(hosts)
+    }
+
+    // MARK: - Air Traffic Control
+
+    var routingRules: [RoutingRule] = []
+
+    func addRoutingRule(_ rule: RoutingRule) {
+        routingRules.append(rule)
+        persistRoutingRules()
+    }
+
+    func removeRoutingRule(_ ruleID: RoutingRule.ID) {
+        routingRules.removeAll { $0.id == ruleID }
+        persistRoutingRules()
+    }
+
+    func updateRoutingRule(_ rule: RoutingRule) {
+        guard let index = routingRules.firstIndex(where: { $0.id == rule.id }) else { return }
+        routingRules[index] = rule
+        persistRoutingRules()
+    }
+
+    func evaluateRoutingRules(for url: URL) -> Workspace.ID? {
+        routingRules.first(where: { $0.matches(url) })?.targetWorkspaceID
+    }
+
+    func routeExternalURL(_ url: URL) {
+        if let targetWSID = evaluateRoutingRules(for: url),
+           workspaces.contains(where: { $0.id == targetWSID }) {
+            switchWorkspace(targetWSID)
+            createTab(in: targetWSID, url: url)
+        } else {
+            createTab(url: url)
+        }
+    }
+
+    private func persistRoutingRules() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "routing-rules.json")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? JSONEncoder().encode(routingRules).write(to: url, options: [.atomic])
+    }
+
+    func loadRoutingRules() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "routing-rules.json")
+        guard let data = try? Data(contentsOf: url),
+              let rules = try? JSONDecoder().decode([RoutingRule].self, from: data) else { return }
+        routingRules = rules
     }
 
     // MARK: - Downloads

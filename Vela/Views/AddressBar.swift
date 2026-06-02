@@ -12,6 +12,11 @@ struct AddressBar: View {
     var isBookmarked: Bool = false
     var isReaderMode: Bool = false
     var hasActiveBoosts: Bool = false
+    var blockedCount: Int = 0
+    var isContentBlockingDisabled: Bool = false
+    var isZapActive: Bool = false
+    var onToggleContentBlocking: () -> Void = {}
+    var onToggleZap: () -> Void = {}
     var suggestions: [AutocompleteSuggestion] = []
     var onSubmit: () -> Void
     var onBack: () -> Void = {}
@@ -84,6 +89,35 @@ struct AddressBar: View {
                     .frame(width: 16, height: 16)
                     .help("Boosts active on this site")
             }
+
+            Button {
+                onToggleContentBlocking()
+            } label: {
+                HStack(spacing: 2) {
+                    Image(systemName: isContentBlockingDisabled ? "shield.slash" : "shield.lefthalf.filled")
+                        .font(.caption)
+                        .foregroundStyle(isContentBlockingDisabled ? Color.secondary : Color.green)
+                    if blockedCount > 0 {
+                        Text("\(blockedCount)")
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .frame(height: 16)
+            }
+            .buttonStyle(.plain)
+            .help(isContentBlockingDisabled ? "Content blocking disabled for this site" : "Content blocking active — \(blockedCount) blocked")
+
+            Button {
+                onToggleZap()
+            } label: {
+                Image(systemName: isZapActive ? "bolt.circle.fill" : "bolt.circle")
+                    .font(.caption)
+                    .foregroundStyle(isZapActive ? Color.orange : Color.secondary)
+                    .frame(width: 16, height: 16)
+            }
+            .buttonStyle(.plain)
+            .help(isZapActive ? "Exit Zap Mode" : "Zap Element — click to hide")
 
             Button {
                 onToggleBookmark()

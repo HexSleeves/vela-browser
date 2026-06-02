@@ -9,6 +9,9 @@ struct VelaApp: App {
             MainBrowserWindow()
                 .environment(store)
                 .frame(minWidth: 960, minHeight: 640)
+                .onOpenURL { url in
+                    store.routeExternalURL(url)
+                }
         }
         .defaultSize(width: 1200, height: 800)
         .commands {

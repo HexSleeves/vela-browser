@@ -48,6 +48,7 @@ final class WebViewPool: WebViewPooling {
 
         let configuration = WKWebViewConfiguration()
         configuration.websiteDataStore = dataStore(for: tabID)
+        store?.contentBlocker.applyRules(to: configuration)
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
         webView.customUserAgent = userAgent

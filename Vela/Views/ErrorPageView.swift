@@ -1,10 +1,16 @@
+import AppKit
 import SwiftUI
 
 struct ErrorPageView: View {
     let errorDescription: String
     let errorCode: Int
     let host: String?
+    let url: URL?
     @Environment(BrowserStore.self) private var store
+
+    private var isGoogleSignInBlocked: Bool {
+        errorCode == BrowserErrorCode.googleEmbeddedSignInBlocked
+    }
 
     private var isSSLError: Bool {
         // NSURLErrorServerCertificateUntrusted = -1202
@@ -15,6 +21,8 @@ struct ErrorPageView: View {
     }
 
     private var errorIcon: String {
+        if isGoogleSignInBlocked { return "person.crop.circle.badge.exclamationmark" }
+
         switch errorCode {
         case -1009: return "wifi.slash"          // Not connected
         case -1001: return "clock.badge.xmark"   // Timed out
@@ -27,6 +35,8 @@ struct ErrorPageView: View {
     }
 
     private var errorTitle: String {
+        if isGoogleSignInBlocked { return "Google Sign-In Needs Your Default Browser" }
+
         switch errorCode {
         case -1009: return "No Internet Connection"
         case -1001: return "Connection Timed Out"
@@ -66,13 +76,30 @@ struct ErrorPageView: View {
                     .frame(maxWidth: 400)
 
                 HStack(spacing: 12) {
-                    Button("Try Again") {
-                        if let tabID = store.activeTabID {
-                            store.clearTabError(tabID)
+                    if isGoogleSignInBlocked, let url {
+                        Button("Open in Default Browser") {
+                            NSWorkspace.shared.open(GoogleSignInCompatibility.externalFallbackURL(for: url))
                         }
-                        store.reload()
+                        .buttonStyle(.borderedProminent)
                     }
-                    .buttonStyle(.borderedProminent)
+
+                    if isGoogleSignInBlocked {
+                        Button("Try Again") {
+                            if let tabID = store.activeTabID {
+                                store.clearTabError(tabID)
+                            }
+                            store.reload()
+                        }
+                        .buttonStyle(.bordered)
+                    } else {
+                        Button("Try Again") {
+                            if let tabID = store.activeTabID {
+                                store.clearTabError(tabID)
+                            }
+                            store.reload()
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
 
                     if isSSLError, let host {
                         Button("Proceed Anyway") {

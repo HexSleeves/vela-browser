@@ -18,6 +18,7 @@ struct BrowserWebView: NSViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         context.coordinator.installPeekHandler(on: webView)
+        context.coordinator.installZapHandler(on: webView)
         context.coordinator.observe(webView)
         return webView
     }
@@ -54,8 +55,21 @@ struct BrowserWebView: NSViewRepresentable {
             webView.configuration.userContentController.add(self, name: "velaPeek")
         }
 
+        private var zapHandlerInstalled = false
+
+        func installZapHandler(on webView: WKWebView) {
+            guard !zapHandlerInstalled else { return }
+            zapHandlerInstalled = true
+            webView.configuration.userContentController.add(self, name: "velaZap")
+        }
+
         nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             Task { @MainActor in
+                if message.name == "velaZap", let selector = message.body as? String {
+                    self.store?.createZapBoost(selector: selector)
+                    return
+                }
+
                 guard let body = message.body as? [String: String],
                       let type = body["type"] else { return }
 
@@ -163,6 +177,14 @@ struct BrowserWebView: NSViewRepresentable {
             Task { @MainActor in
                 store?.updateTab(tabID, title: webView.title, url: webView.url, isLoading: false, estimatedProgress: 1.0)
                 store?.updateNavState(tabID, canGoBack: webView.canGoBack, canGoForward: webView.canGoForward)
+                if let url = webView.url, GoogleSignInCompatibility.isEmbeddedSignInRejection(url) {
+                    store?.setTabError(
+                        tabID,
+                        description: "Google blocks sign-in inside embedded browser views. Open this sign-in flow in your default browser to continue.",
+                        code: BrowserErrorCode.googleEmbeddedSignInBlocked
+                    )
+                    return
+                }
                 self.injectPeekScript(webView)
             }
         }

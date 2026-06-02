@@ -19,6 +19,15 @@ struct BrowserSurfaceView: View {
                 isBookmarked: store.activeTab?.url.flatMap { store.isBookmarked($0) } ?? false,
                 isReaderMode: store.activeTab?.isReaderMode ?? false,
                 hasActiveBoosts: store.activeTab?.url?.host().flatMap { !store.boostsForHost($0).isEmpty } ?? false,
+                blockedCount: store.activeTabID.flatMap { store.blockedRequestCount[$0] } ?? 0,
+                isContentBlockingDisabled: store.activeTab?.url?.host().flatMap { store.isContentBlockingDisabled(for: $0) } ?? false,
+                isZapActive: store.isZapModeActive,
+                onToggleContentBlocking: {
+                    if let host = store.activeTab?.url?.host() {
+                        store.toggleContentBlockingException(host: host)
+                    }
+                },
+                onToggleZap: { store.toggleZapMode() },
                 suggestions: store.autocompleteSuggestions(for: addressText),
                 onSubmit: { store.loadAddressInput(addressText) },
                 onBack: { store.goBack() },
@@ -52,7 +61,8 @@ struct BrowserSurfaceView: View {
                 ErrorPageView(
                     errorDescription: errorDesc,
                     errorCode: errorCode,
-                    host: tab.url?.host()
+                    host: tab.url?.host(),
+                    url: tab.url
                 )
             } else if let tabID = store.activeTabID, store.activeTab?.url != nil {
                 if let splitID = store.splitTabID {
