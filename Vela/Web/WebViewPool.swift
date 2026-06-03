@@ -106,6 +106,15 @@ final class WebViewPool: WebViewPooling {
         webViews.removeValue(forKey: tabID)
     }
 
+    func reapplyContentBlockingRules() {
+        guard let store else { return }
+        for (_, webView) in webViews {
+            let ucc = webView.configuration.userContentController
+            ucc.removeAllContentRuleLists()
+            store.contentBlocker.applyRules(to: webView.configuration)
+        }
+    }
+
     func goBack(tabID: BrowserTab.ID) {
         webViews[tabID]?.goBack()
     }

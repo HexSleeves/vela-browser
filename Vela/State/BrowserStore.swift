@@ -29,10 +29,10 @@ final class BrowserStore {
     var swipeIndicator: [BrowserTab.ID: SwipeDirection] = [:]
     var peekURL: URL?
     var isPeekVisible = false
+    var pendingCommand: BrowserCommand?
     var isZapModeActive = false
     @ObservationIgnored var contentBlocker = ContentBlockerService()
     var contentBlockingExceptions: Set<String> = []
-    var blockedRequestCount: [BrowserTab.ID: Int] = [:]
 
     enum TransientTabKind {
         case littleVela
@@ -224,6 +224,11 @@ final class BrowserStore {
     }
 
     func closeTab(_ tabID: BrowserTab.ID) {
+        if isPeekVisible {
+            isPeekVisible = false
+            peekURL = nil
+        }
+
         if isTransientTab(tabID) {
             discardTransientTab(tabID)
             return
@@ -874,6 +879,19 @@ final class BrowserStore {
         }
     }
 
+    func setContentBlockingEnabled(_ enabled: Bool) {
+        UserDefaults.standard.set(enabled, forKey: "contentBlockingEnabled")
+        if enabled {
+            Task {
+                await contentBlocker.compileDefaultList()
+                await contentBlocker.compileExceptionList(hosts: contentBlockingExceptions)
+                (webViewPool as? WebViewPool)?.reapplyContentBlockingRules()
+            }
+        } else {
+            (webViewPool as? WebViewPool)?.reapplyContentBlockingRules()
+        }
+    }
+
     func toggleContentBlockingException(host: String) {
         if contentBlockingExceptions.contains(host) {
             contentBlockingExceptions.remove(host)
@@ -881,7 +899,10 @@ final class BrowserStore {
             contentBlockingExceptions.insert(host)
         }
         persistContentBlockingExceptions()
-        Task { await contentBlocker.compileExceptionList(hosts: contentBlockingExceptions) }
+        Task {
+            await contentBlocker.compileExceptionList(hosts: contentBlockingExceptions)
+            (webViewPool as? WebViewPool)?.reapplyContentBlockingRules()
+        }
     }
 
     func isContentBlockingDisabled(for host: String) -> Bool {

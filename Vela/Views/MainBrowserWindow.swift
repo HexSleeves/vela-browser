@@ -73,6 +73,11 @@ struct MainBrowserWindow: View {
         .focusedValue(\.browserCommandSink) { command in
             handle(command)
         }
+        .onChange(of: store.pendingCommand) { _, command in
+            guard let command else { return }
+            store.pendingCommand = nil
+            handle(command)
+        }
     }
 
     private func handle(_ command: BrowserCommand) {

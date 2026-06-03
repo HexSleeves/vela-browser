@@ -20,6 +20,11 @@ struct BrowserWebView: NSViewRepresentable {
         context.coordinator.installPeekHandler(on: webView)
         context.coordinator.installZapHandler(on: webView)
         context.coordinator.observe(webView)
+
+        if webView.url == nil, let tab = store.tabs[tabID], let url = tab.url, !tab.isStub {
+            webView.load(URLRequest(url: url))
+        }
+
         return webView
     }
 

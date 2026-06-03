@@ -233,23 +233,31 @@ struct CommandBarView: View {
                 Task { await FaviconCache.shared.clear() }
             },
             CommandAction(id: "private-window", title: "New Private Window", icon: "eye.slash", shortcut: "⇧⌘N") { [store] in
-                // Dispatched via BrowserCommands
+                store.pendingCommand = .openPrivateWindow
             },
             CommandAction(id: "little-vela", title: "Open Little Vela", icon: "rectangle.on.rectangle.angled", shortcut: "⌥⌘N") { [store] in
-                // Dispatched via BrowserCommands
+                store.pendingCommand = .openLittleVela
             },
 
             // Profile management
-            CommandAction(id: "manage-profiles", title: "Manage Profiles", icon: "person.2", shortcut: nil) { },
+            CommandAction(id: "manage-profiles", title: "Manage Profiles", icon: "person.2", shortcut: nil) {
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            },
 
             // Settings
-            CommandAction(id: "settings", title: "Open Settings", icon: "gearshape", shortcut: "⌘,") { },
+            CommandAction(id: "settings", title: "Open Settings", icon: "gearshape", shortcut: "⌘,") {
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            },
 
             // Focus
-            CommandAction(id: "focus-address", title: "Focus Address Bar", icon: "character.cursor.ibeam", shortcut: "⌘L") { },
+            CommandAction(id: "focus-address", title: "Focus Address Bar", icon: "character.cursor.ibeam", shortcut: "⌘L") { [store] in
+                store.pendingCommand = .focusAddressBar
+            },
 
             // Import
-            CommandAction(id: "import-bookmarks", title: "Import Bookmarks", icon: "square.and.arrow.down", shortcut: nil) { },
+            CommandAction(id: "import-bookmarks", title: "Import Bookmarks", icon: "square.and.arrow.down", shortcut: nil) { [store] in
+                store.pendingCommand = .importBookmarks
+            },
 
             // Mute
             CommandAction(id: "mute-tab", title: "Toggle Mute Tab", icon: "speaker.slash", shortcut: nil) { [store] in

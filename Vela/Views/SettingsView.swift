@@ -76,6 +76,9 @@ struct SettingsView: View {
 
             Section("Content Blocking") {
                 Toggle("Block Ads & Trackers", isOn: $contentBlockingEnabled)
+                    .onChange(of: contentBlockingEnabled) { _, newValue in
+                        store.setContentBlockingEnabled(newValue)
+                    }
 
                 if !store.contentBlockingExceptions.isEmpty {
                     ForEach(Array(store.contentBlockingExceptions).sorted(), id: \.self) { host in

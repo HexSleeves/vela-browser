@@ -149,7 +149,7 @@ struct BrowserCommands: Commands {
     }
 }
 
-enum BrowserCommand {
+enum BrowserCommand: Equatable {
     case newTab
     case closeTab
     case focusAddressBar

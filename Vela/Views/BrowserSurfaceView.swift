@@ -19,7 +19,7 @@ struct BrowserSurfaceView: View {
                 isBookmarked: store.activeTab?.url.flatMap { store.isBookmarked($0) } ?? false,
                 isReaderMode: store.activeTab?.isReaderMode ?? false,
                 hasActiveBoosts: store.activeTab?.url?.host().flatMap { !store.boostsForHost($0).isEmpty } ?? false,
-                blockedCount: store.activeTabID.flatMap { store.blockedRequestCount[$0] } ?? 0,
+                blockedCount: 0,
                 isContentBlockingDisabled: store.activeTab?.url?.host().flatMap { store.isContentBlockingDisabled(for: $0) } ?? false,
                 isZapActive: store.isZapModeActive,
                 onToggleContentBlocking: {
