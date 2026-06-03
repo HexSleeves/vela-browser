@@ -33,6 +33,8 @@ final class BrowserStore {
     var isZapModeActive = false
     @ObservationIgnored var contentBlocker = ContentBlockerService()
     var contentBlockingExceptions: Set<String> = []
+    var installedExtensions: [InstalledExtension] = []
+    @ObservationIgnored var extensionController = WKWebExtensionController()
 
     enum TransientTabKind {
         case littleVela
@@ -71,6 +73,7 @@ final class BrowserStore {
             store.loadHistory()
             store.loadBookmarks()
             store.loadBoosts()
+            store.loadExtensions()
             store.loadDownloads()
             store.loadRoutingRules()
             store.initContentBlocking()
@@ -687,6 +690,96 @@ final class BrowserStore {
         guard let data = try? Data(contentsOf: url),
               let entries = try? JSONDecoder().decode([Boost].self, from: data) else { return }
         boosts = entries
+    }
+
+    // MARK: - Extensions
+
+    func installExtension(from url: URL) {
+        Task {
+            guard let webExtension = try? await WKWebExtension(resourceBaseURL: url) else { return }
+            let context = WKWebExtensionContext(for: webExtension)
+            try? extensionController.load(context)
+
+            let name = webExtension.displayName ?? url.lastPathComponent
+            let version = webExtension.version ?? "0.0.0"
+
+            let extensionsDir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+                .appending(path: "Vela", directoryHint: .isDirectory)
+                .appending(path: "Extensions", directoryHint: .isDirectory)
+            try? FileManager.default.createDirectory(at: extensionsDir, withIntermediateDirectories: true)
+
+            let destDir = extensionsDir.appending(path: url.lastPathComponent)
+            if !FileManager.default.fileExists(atPath: destDir.path) {
+                try? FileManager.default.copyItem(at: url, to: destDir)
+            }
+
+            let installed = InstalledExtension(
+                name: name,
+                version: version,
+                extensionBundlePath: "Extensions/\(url.lastPathComponent)"
+            )
+            installedExtensions.append(installed)
+            persistExtensions()
+        }
+    }
+
+    func removeExtension(id: InstalledExtension.ID) {
+        guard let index = installedExtensions.firstIndex(where: { $0.id == id }) else { return }
+        let ext = installedExtensions[index]
+
+        for context in extensionController.extensionContexts {
+            if context.webExtension.displayName == ext.name {
+                try? extensionController.unload(context)
+                break
+            }
+        }
+
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let extPath = base.appending(path: ext.extensionBundlePath)
+        try? FileManager.default.removeItem(at: extPath)
+
+        installedExtensions.remove(at: index)
+        persistExtensions()
+    }
+
+    func toggleExtension(_ id: InstalledExtension.ID) {
+        guard let index = installedExtensions.firstIndex(where: { $0.id == id }) else { return }
+        installedExtensions[index].isEnabled.toggle()
+        persistExtensions()
+    }
+
+    func setExtensionPrivateBrowsing(_ id: InstalledExtension.ID, allowed: Bool) {
+        guard let index = installedExtensions.firstIndex(where: { $0.id == id }) else { return }
+        installedExtensions[index].allowInPrivateBrowsing = allowed
+        persistExtensions()
+    }
+
+    private func persistExtensions() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "extensions.json")
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try? JSONEncoder().encode(installedExtensions).write(to: url, options: [.atomic])
+    }
+
+    func loadExtensions() {
+        let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appending(path: "Vela", directoryHint: .isDirectory)
+        let url = directory.appending(path: "extensions.json")
+        guard let data = try? Data(contentsOf: url),
+              let entries = try? JSONDecoder().decode([InstalledExtension].self, from: data) else { return }
+        installedExtensions = entries
+
+        for ext in installedExtensions where ext.isEnabled {
+            let extURL = directory.appending(path: ext.extensionBundlePath)
+            guard FileManager.default.fileExists(atPath: extURL.path) else { continue }
+            Task {
+                guard let webExtension = try? await WKWebExtension(resourceBaseURL: extURL) else { return }
+                let context = WKWebExtensionContext(for: webExtension)
+                try? extensionController.load(context)
+            }
+        }
     }
 
     // MARK: - Favorites

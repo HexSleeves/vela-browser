@@ -2,11 +2,11 @@ name: Vela
 options:
   bundleIdPrefix: dev.lecoqjacob
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "15.4"
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    MACOSX_DEPLOYMENT_TARGET: "15.4"
 targets:
   Vela:
     type: application

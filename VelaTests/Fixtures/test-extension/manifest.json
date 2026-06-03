@@ -1,0 +1,16 @@
+{
+    "manifest_version": 3,
+    "name": "Vela Test Extension",
+    "version": "1.0.0",
+    "description": "A minimal test extension for Vela unit tests",
+    "permissions": ["storage"],
+    "content_scripts": [
+        {
+            "matches": ["*://example.com/*"],
+            "js": ["content.js"]
+        }
+    ],
+    "action": {
+        "default_title": "Test Action"
+    }
+}
