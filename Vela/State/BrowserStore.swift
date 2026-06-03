@@ -75,6 +75,7 @@ final class BrowserStore {
             store.loadRoutingRules()
             store.initContentBlocking()
             store.archiveStaleTabsIfNeeded()
+            store.restorePersistedTabURLs()
             return store
         }
 
@@ -1001,6 +1002,17 @@ final class BrowserStore {
     func clearCompletedDownloads() {
         downloads.removeAll { $0.state != .downloading }
         persistDownloads()
+    }
+
+    // MARK: - Tab URL Restoration
+
+    func restorePersistedTabURLs() {
+        for workspace in workspaces {
+            for tabID in workspace.tabIDs {
+                guard let tab = tabs[tabID], let url = tab.url, !tab.isStub else { continue }
+                webViewPool.load(url, in: tabID)
+            }
+        }
     }
 
     // MARK: - Auto-Archive
