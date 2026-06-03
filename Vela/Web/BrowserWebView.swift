@@ -52,7 +52,11 @@ struct BrowserWebView: NSViewRepresentable {
         func installPeekHandler(on webView: WKWebView) {
             guard !peekHandlerInstalled else { return }
             peekHandlerInstalled = true
-            webView.configuration.userContentController.add(self, name: "velaPeek")
+            WebScriptMessageHandlerInstaller.replaceHandler(
+                self,
+                name: WebScriptMessageHandlerInstaller.peekName,
+                in: webView.configuration.userContentController
+            )
         }
 
         private var zapHandlerInstalled = false
@@ -60,21 +64,32 @@ struct BrowserWebView: NSViewRepresentable {
         func installZapHandler(on webView: WKWebView) {
             guard !zapHandlerInstalled else { return }
             zapHandlerInstalled = true
-            webView.configuration.userContentController.add(self, name: "velaZap")
+            WebScriptMessageHandlerInstaller.replaceHandler(
+                self,
+                name: WebScriptMessageHandlerInstaller.zapName,
+                in: webView.configuration.userContentController
+            )
         }
 
         nonisolated func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
             Task { @MainActor in
-                if message.name == "velaZap", let selector = message.body as? String {
+                if message.name == WebScriptMessageHandlerInstaller.zapName, let selector = message.body as? String {
                     self.store?.createZapBoost(selector: selector)
                     return
                 }
 
+                guard message.name == WebScriptMessageHandlerInstaller.peekName else { return }
                 guard let body = message.body as? [String: String],
                       let type = body["type"] else { return }
 
                 if type == "hover", let urlString = body["url"],
                    let url = URL(string: urlString) {
+                    if let pageURL = self.store?.tabs[self.tabID]?.url,
+                       AuthPageCompatibility.disablesPeekPreviews(for: pageURL) {
+                        self.hidePeek()
+                        return
+                    }
+
                     self.peekDelayTask?.cancel()
                     self.peekDelayTask = Task { @MainActor in
                         try? await Task.sleep(for: .milliseconds(300))
@@ -140,6 +155,11 @@ struct BrowserWebView: NSViewRepresentable {
         // MARK: - WKNavigationDelegate
 
         func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+            if let url = navigationAction.request.url,
+               AuthPageCompatibility.disablesPeekPreviews(for: url) {
+                hidePeek()
+            }
+
             // Intercept link clicks in pinned tabs with designated URLs
             if navigationAction.navigationType == .linkActivated,
                let url = navigationAction.request.url,
@@ -185,7 +205,21 @@ struct BrowserWebView: NSViewRepresentable {
                     )
                     return
                 }
+
+                if let url = webView.url, AuthPageCompatibility.disablesPeekPreviews(for: url) {
+                    self.hidePeek()
+                    return
+                }
+
                 self.injectPeekScript(webView)
+            }
+        }
+
+        private func hidePeek() {
+            peekDelayTask?.cancel()
+            VelaAnimation.withEmphasis {
+                store?.isPeekVisible = false
+                store?.peekURL = nil
             }
         }
 
